@@ -93,4 +93,4 @@ This application stores encrypted credentials (SNMP community strings, WinRM pas
 <img width="2543" height="1267" alt="image" src="https://github.com/user-attachments/assets/97d54c43-7b4e-4e06-a1bd-82afbe4bdb22" />
 <img width="966" height="1189" alt="image" src="https://github.com/user-attachments/assets/2f97c84c-022f-4d4e-a541-030fe415e055" />
 
-Private — All rights reserved.
+[MIT](LICENSE) — Free to use, modify, and distribute in commercial and non-commercial environments.
