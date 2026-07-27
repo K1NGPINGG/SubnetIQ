@@ -87,10 +87,12 @@ This application stores encrypted credentials (SNMP community strings, WinRM pas
 
 **Never commit your `.env` file to version control.**
 
-## License
+## Screenshots
 
 <img width="2545" height="1268" alt="image" src="https://github.com/user-attachments/assets/ac6bbbe1-2321-43fe-8c8a-4011f2935f47" />
 <img width="2543" height="1267" alt="image" src="https://github.com/user-attachments/assets/97d54c43-7b4e-4e06-a1bd-82afbe4bdb22" />
 <img width="966" height="1189" alt="image" src="https://github.com/user-attachments/assets/2f97c84c-022f-4d4e-a541-030fe415e055" />
+
+## License
 
 [MIT](LICENSE) — Free to use, modify, and distribute in commercial and non-commercial environments.
