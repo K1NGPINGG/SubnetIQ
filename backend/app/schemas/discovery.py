@@ -24,7 +24,7 @@ class DiscoveryScanCreate(DiscoveryScanBase):
 class DiscoveryScanResponse(DiscoveryScanBase):
     """Schema for discovery scan response. ``subnet_id`` is nullable because
     scans triggered via ``/discovery/run`` may target explicit IP lists."""
-    subnet_id: UUID | None = None
+    subnet_id: UUID | None = None  # type: ignore[assignment]  # optional for IP-list scans
     id: UUID
     tenant_id: UUID
     status: str

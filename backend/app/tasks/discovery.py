@@ -748,7 +748,7 @@ async def _winrm_discover_host(
 ) -> dict | None:
     """Discover a Windows host via WinRM (pypsrp). Returns asset data dict or None."""
     try:
-        from pypsrp.shell import PowerShell, RunspacePool
+        from pypsrp.powershell import PowerShell, RunspacePool
         from pypsrp.wsman import WSMan
     except ImportError:
         logger.warning("pypsrp not installed, cannot run WinRM discovery")
@@ -766,7 +766,7 @@ async def _winrm_discover_host(
             connect_timeout=15,
         )
 
-        with RunspacePool(wsman, max_concurrent=1) as pool:
+        with RunspacePool(wsman, min_runspaces=1, max_runspaces=1) as pool:
             ps = PowerShell(pool)
             ps.add_script(POWERSHELL_HARDWARE_SCRIPT)
             output = ps.invoke()

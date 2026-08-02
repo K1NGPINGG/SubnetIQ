@@ -1,6 +1,7 @@
 """IP address utilities: client IP extraction and IPv4/IPv6 helpers."""
 
 import ipaddress
+from typing import cast
 
 from fastapi import Request
 
@@ -131,7 +132,10 @@ def network_contains(parent: NetworkType, child: NetworkType) -> bool:
     """Return True if ``child`` is contained within ``parent`` (same family)."""
     if parent.version != child.version:
         return False
-    return child.subnet_of(parent)
+    # Narrow the union so mypy accepts typeshed's family-specific subnet_of().
+    if parent.version == 4:
+        return cast(ipaddress.IPv4Network, child).subnet_of(cast(ipaddress.IPv4Network, parent))
+    return cast(ipaddress.IPv6Network, child).subnet_of(cast(ipaddress.IPv6Network, parent))
 
 
 def find_parent_network(networks, network: NetworkType) -> NetworkType | None:
