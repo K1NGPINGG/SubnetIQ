@@ -13,6 +13,9 @@ UPDATES="${UPDATE_DATA_DIR:-/updates}"
 mkdir -p "$UPDATES"
 chmod 777 "$UPDATES"
 
+git config --global --add safe.directory "$STACK" || true
+git config --global --add safe.directory /updates || true
+
 log() {
   echo "[updater] $(date -u +%Y-%m-%dT%H:%M:%SZ) $*" >> "$UPDATES/update.log"
   chmod 644 "$UPDATES/update.log"
