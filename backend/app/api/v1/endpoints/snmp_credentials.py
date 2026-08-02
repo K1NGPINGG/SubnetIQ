@@ -1,26 +1,9 @@
 """SNMP Credential management endpoints."""
 
-from typing import List
-from uuid import UUID
-
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.api.deps import get_current_admin_user, validate_tenant_access
-from app.core.database import get_db
-from app.models.snmp_credential import SNMPCredential
-from app.models.user import User
-from app.schemas.snmp_credential import (
-    SNMPCredentialCreate,
-    SNMPCredentialUpdate,
-    SNMPCredentialResponse,
-)
-
-router = APIRouter(redirect_slashes=False)
+from uuid import UUIDfrom fastapi import APIRouter, Depends, HTTPException, statusfrom sqlalchemy import selectfrom sqlalchemy.ext.asyncio import AsyncSessionfrom app.api.deps import get_current_admin_user, validate_tenant_accessfrom app.core.database import get_dbfrom app.models.snmp_credential import SNMPCredentialfrom app.models.user import Userfrom app.schemas.snmp_credential import (    SNMPCredentialCreate,    SNMPCredentialResponse,    SNMPCredentialUpdate,)router = APIRouter(redirect_slashes=False)
 
 
-@router.get("", response_model=List[SNMPCredentialResponse])
+@router.get("", response_model=list[SNMPCredentialResponse])
 async def list_snmp_credentials(
     db: AsyncSession = Depends(get_db),
     tenant_id: UUID = Depends(validate_tenant_access),

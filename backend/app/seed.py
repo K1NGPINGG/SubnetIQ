@@ -1,13 +1,13 @@
 """Seed script: create default tenant and admin user on first startup."""
 
-import uuid
 import logging
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+import uuid
 
+from sqlalchemy import select
+
+from app.core.config import settings
 from app.core.database import async_session_factory
 from app.core.security import hash_password
-from app.core.config import settings
 from app.models.tenant import Tenant
 from app.models.user import User
 

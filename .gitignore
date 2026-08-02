@@ -34,3 +34,6 @@ tenant_logos/
 
 # Deployment/debug scripts
 scripts/
+
+# Update runtime state
+.updates/

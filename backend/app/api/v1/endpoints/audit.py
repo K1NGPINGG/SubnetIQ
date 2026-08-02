@@ -1,25 +1,13 @@
 """Audit log endpoints."""
 
-from typing import Optional
-from uuid import UUID
-
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy import select, func
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.api.deps import get_current_active_user, validate_tenant_access, get_current_admin_user
-from app.core.database import get_db
-from app.models.audit import AuditLog
-from app.models.user import User
-
-router = APIRouter()
+from uuid import UUIDfrom fastapi import APIRouter, Depends, Queryfrom sqlalchemy import func, selectfrom sqlalchemy.ext.asyncio import AsyncSessionfrom app.api.deps import get_current_admin_user, validate_tenant_accessfrom app.core.database import get_dbfrom app.models.audit import AuditLogfrom app.models.user import Userrouter = APIRouter()
 
 
 @router.get("", summary="List audit logs")
 async def list_audit_logs(
-    entity_type: Optional[str] = Query(None, description="Filter by entity type"),
-    action: Optional[str] = Query(None, description="Filter by action"),
-    user_id: Optional[UUID] = Query(None, description="Filter by user"),
+    entity_type: str | None = Query(None, description="Filter by entity type"),
+    action: str | None = Query(None, description="Filter by action"),
+    user_id: UUID | None = Query(None, description="Filter by user"),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     db: AsyncSession = Depends(get_db),

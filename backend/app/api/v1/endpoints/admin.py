@@ -2,20 +2,19 @@
 
 import re
 from uuid import UUID
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, field_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
-from app.core.security import hash_password
-from app.core.ip_utils import get_client_ip
 from app.api.deps import get_current_admin_user, validate_tenant_access
-from app.models.user import User
-from app.schemas.user import UserCreate, UserUpdate, UserResponse
 from app.core.audit import log_audit
+from app.core.database import get_db
+from app.core.ip_utils import get_client_ip
+from app.core.security import hash_password
+from app.models.user import User
+from app.schemas.user import UserCreate, UserResponse, UserUpdate
 
 ALLOWED_USER_UPDATE_FIELDS = {"display_name", "role", "is_active", "mfa_enforced"}
 

@@ -1,7 +1,6 @@
 """Subnet schemas."""
 
 from datetime import datetime
-from typing import List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -12,12 +11,18 @@ class SubnetBase(BaseModel):
     network_address: str
     prefix_length: int
     name: str
-    description: Optional[str] = None
-    gateway: Optional[str] = None
-    dns_servers: Optional[str] = None
-    site_id: Optional[UUID] = None
-    vlan_id: Optional[UUID] = None
-    parent_subnet_id: Optional[UUID] = None
+    description: str | None = None
+    gateway: str | None = None
+    dns_servers: str | None = None
+    vrf_id: UUID | None = None
+    site_id: UUID | None = None
+    vlan_id: UUID | None = None
+    parent_subnet_id: UUID | None = None
+    role: str | None = None
+    status: str = "active"
+    is_container: bool = False
+    tags: list[str] | None = None
+    custom_fields: dict | None = None
 
 
 class SubnetCreate(SubnetBase):
@@ -27,19 +32,26 @@ class SubnetCreate(SubnetBase):
 
 class SubnetUpdate(BaseModel):
     """Schema for updating a subnet."""
-    name: Optional[str] = None
-    description: Optional[str] = None
-    gateway: Optional[str] = None
-    dns_servers: Optional[str] = None
-    site_id: Optional[UUID] = None
-    vlan_id: Optional[UUID] = None
-    parent_subnet_id: Optional[UUID] = None
+    name: str | None = None
+    description: str | None = None
+    gateway: str | None = None
+    dns_servers: str | None = None
+    vrf_id: UUID | None = None
+    site_id: UUID | None = None
+    vlan_id: UUID | None = None
+    parent_subnet_id: UUID | None = None
+    role: str | None = None
+    status: str | None = None
+    is_container: bool | None = None
+    tags: list[str] | None = None
+    custom_fields: dict | None = None
 
 
 class SubnetResponse(SubnetBase):
     """Schema for subnet response."""
     id: UUID
     tenant_id: UUID
+    family: int = 4
     created_at: datetime
     updated_at: datetime
 
@@ -49,4 +61,4 @@ class SubnetResponse(SubnetBase):
 class SubnetTreeResponse(BaseModel):
     """Schema for subnet tree (parent + children)."""
     subnet: SubnetResponse
-    children: List[SubnetResponse]
+    children: list[SubnetResponse]

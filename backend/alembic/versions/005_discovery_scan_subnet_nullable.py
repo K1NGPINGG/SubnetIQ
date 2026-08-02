@@ -1,14 +1,14 @@
 """Make subnet_id nullable in discovery_scans for asset discovery tracking.
 
-Revision ID: 005
-Revises: 004
+Revision ID: 005_discovery_scan_subnet_nullable
+Revises: 004_winrm_credentials
 Create Date: 2026-07-26
 """
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import UUID
 
-revision = "005"
+revision = "005_discovery_scan_subnet_nullable"
 down_revision = "004_winrm_credentials"
 branch_labels = None
 depends_on = None

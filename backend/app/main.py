@@ -3,17 +3,18 @@
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, Response
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
+from app.api.v1.router import api_router
 from app.core.config import settings
 from app.core.database import engine
 from app.core.rate_limit import limiter
-from app.api.v1.router import api_router
-from app.middleware.audit import AuditMiddleware
 from app.middleware.api_logging import APIRequestLoggingMiddleware
+from app.middleware.audit import AuditMiddleware
 from app.middleware.tenant import TenantMiddleware
 from app.seed import seed_database
 
@@ -48,7 +49,16 @@ def create_application() -> FastAPI:
 
     # Rate limiter
     application.state.limiter = limiter
-    application.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+    async def _rate_limit_handler(request: Request, exc: Exception) -> Response:
+        if isinstance(exc, RateLimitExceeded):
+            return _rate_limit_exceeded_handler(request, exc)
+        return JSONResponse(
+            status_code=429,
+            content={"detail": "Too many requests"},
+        )
+
+    application.add_exception_handler(RateLimitExceeded, _rate_limit_handler)
 
     # CORS Middleware — restrict origins
     application.add_middleware(

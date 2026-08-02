@@ -1,7 +1,6 @@
 """User schemas."""
 
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -21,12 +20,12 @@ class UserCreate(UserBase):
 
 class UserUpdate(BaseModel):
     """Schema for updating a user."""
-    email: Optional[str] = None
-    display_name: Optional[str] = None
-    role: Optional[str] = None
-    is_active: Optional[bool] = None
-    mfa_enforced: Optional[bool] = None
-    password: Optional[str] = None
+    email: str | None = None
+    display_name: str | None = None
+    role: str | None = None
+    is_active: bool | None = None
+    mfa_enforced: bool | None = None
+    password: str | None = None
 
 
 class UserResponse(UserBase):

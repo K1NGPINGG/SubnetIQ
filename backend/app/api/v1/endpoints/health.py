@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.database import get_db
 
 router = APIRouter()
@@ -14,7 +15,7 @@ router = APIRouter()
 @router.get("", summary="Basic health check")
 async def health_check():
     """Return basic health status."""
-    return {"status": "healthy", "service": "SubnetIQ"}
+    return {"status": "healthy", "service": "SubnetIQ", "version": settings.APP_VERSION}
 
 
 @router.get("/db", summary="Database health check")

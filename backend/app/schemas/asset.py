@@ -1,7 +1,7 @@
 """Asset schemas."""
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -10,18 +10,18 @@ from pydantic import BaseModel, ConfigDict
 class AssetBase(BaseModel):
     """Base asset schema with common fields."""
     ip_address: str
-    mac_address: Optional[str] = None
-    hostname: Optional[str] = None
-    domain: Optional[str] = None
-    device_type: Optional[str] = "Unknown"
+    mac_address: str | None = None
+    hostname: str | None = None
+    domain: str | None = None
+    device_type: str | None = "Unknown"
     discovery_source: str = "PING"
-    manufacturer: Optional[str] = None
-    model: Optional[str] = None
-    serial_number: Optional[str] = None
-    os_name: Optional[str] = None
-    os_version: Optional[str] = None
-    cpu_cores: Optional[int] = None
-    ram_gb: Optional[float] = None
+    manufacturer: str | None = None
+    model: str | None = None
+    serial_number: str | None = None
+    os_name: str | None = None
+    os_version: str | None = None
+    cpu_cores: int | None = None
+    ram_gb: float | None = None
     status: str = "Online"
 
 
@@ -32,26 +32,26 @@ class AssetCreate(AssetBase):
 
 class AssetUpdate(BaseModel):
     """Schema for updating an asset."""
-    mac_address: Optional[str] = None
-    hostname: Optional[str] = None
-    domain: Optional[str] = None
-    device_type: Optional[str] = None
-    discovery_source: Optional[str] = None
-    manufacturer: Optional[str] = None
-    model: Optional[str] = None
-    serial_number: Optional[str] = None
-    os_name: Optional[str] = None
-    os_version: Optional[str] = None
-    cpu_cores: Optional[int] = None
-    ram_gb: Optional[float] = None
-    status: Optional[str] = None
+    mac_address: str | None = None
+    hostname: str | None = None
+    domain: str | None = None
+    device_type: str | None = None
+    discovery_source: str | None = None
+    manufacturer: str | None = None
+    model: str | None = None
+    serial_number: str | None = None
+    os_name: str | None = None
+    os_version: str | None = None
+    cpu_cores: int | None = None
+    ram_gb: float | None = None
+    status: str | None = None
 
 
 class AssetResponse(AssetBase):
     """Schema for asset response."""
     id: UUID
     tenant_id: UUID
-    last_scanned_at: Optional[datetime] = None
+    last_scanned_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -60,8 +60,8 @@ class AssetResponse(AssetBase):
 
 class AssetDetailResponse(AssetResponse):
     """Detailed asset response with raw scan data and network interfaces."""
-    raw_scan_data: Optional[Any] = None
-    network_interfaces: Optional[Any] = None
+    raw_scan_data: Any | None = None
+    network_interfaces: Any | None = None
 
 
 class AssetListResponse(BaseModel):

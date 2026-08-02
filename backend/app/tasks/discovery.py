@@ -1,30 +1,38 @@
 """SNMP and WinRM asset discovery Celery tasks."""
 
 import asyncio
+import contextlib
 import json
 import logging
 import re
 import time
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
+from typing import Any, cast
+from uuid import UUID
 
 logger = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
-# SNMP Discovery
-# ---------------------------------------------------------------------------
+def _as_result(
+    item: dict[str, Any] | BaseException,
+) -> dict[str, Any] | None:
+    """Return the dict if the gathered item is not an exception."""
+    return cast(dict[str, Any], item) if not isinstance(item, BaseException) else None
 
+
+# ---------------------------------------------------------------------------
+# WinRM Discovery (via pypsrp)
+# ---------------------------------------------------------------------------
 async def _snmp_get(snmp_engine, host_ip: str, community: str, oid: str, timeout: float = 2.0) -> str | None:
     """Single SNMP GET request via pysnmp v7."""
     try:
         from pysnmp.hlapi.asyncio import (
-            getCmd,
             CommunityData,
-            UdpTransportTarget,
             ContextData,
-            ObjectType,
             ObjectIdentity,
+            ObjectType,
+            UdpTransportTarget,
+            getCmd,
         )
         transport = UdpTransportTarget((host_ip, 161))
         error_indication, error_status, error_index, var_binds = await getCmd(
@@ -52,18 +60,18 @@ async def _snmp_get(snmp_engine, host_ip: str, community: str, oid: str, timeout
 
 async def _snmp_walk(snmp_engine, host_ip: str, community: str, oid_base: str, timeout: float = 3.0) -> dict[str, str]:
     """SNMP WALK (bulk walk) returning {oid: value} map."""
-    results = {}
+    results: dict[str, str] = {}
     try:
         from pysnmp.hlapi.asyncio import (
-            bulkCmd,
             CommunityData,
-            UdpTransportTarget,
             ContextData,
-            ObjectType,
             ObjectIdentity,
+            ObjectType,
+            UdpTransportTarget,
+            bulkCmd,
         )
         transport = UdpTransportTarget((host_ip, 161))
-        async for (error_indication, error_status, error_index, var_binds) in bulkCmd(
+        async for (error_indication, error_status, _error_index, var_binds) in bulkCmd(
             snmp_engine,
             CommunityData(community),
             transport,
@@ -142,7 +150,6 @@ async def _snmp_discover_host(host_ip: str, community: str = "public") -> dict |
     OID_SYS_NAME = "1.3.6.1.2.1.1.5.0"
     OID_SYS_OBJECTID = "1.3.6.1.2.1.1.2.0"
     OID_SYS_UPTIME = "1.3.6.1.2.1.1.3.0"
-    OID_IF_NUMBER = "1.3.6.1.2.1.2.1.0"
 
     # Walk the SNMP tree
     sys_descr = await _snmp_get(snmp_engine, host_ip, community, OID_SYS_DESCR)
@@ -159,7 +166,7 @@ async def _snmp_discover_host(host_ip: str, community: str = "public") -> dict |
     # Build network interfaces list
     interfaces = []
     if_indices = set()
-    for oid, val in if_table.items():
+    for oid, _val in if_table.items():
         parts = oid.split(".")
         if len(parts) >= 10:
             idx = parts[9]
@@ -168,9 +175,6 @@ async def _snmp_discover_host(host_ip: str, community: str = "public") -> dict |
 
     # Get interface details per index
     OID_IF_NAME = "1.3.6.1.2.1.2.2.1.2"
-    OID_IF_DESCR = "1.3.6.1.2.1.2.2.1.2"
-    OID_IF_TYPE = "1.3.6.1.2.1.2.2.1.3"
-    OID_IF_SPEED = "1.3.6.1.2.1.2.2.1.5"
     OID_IF_MAC = "1.3.6.1.2.1.2.2.1.6"
     OID_IF_STATUS = "1.3.6.1.2.1.2.2.1.8"
 
@@ -179,11 +183,11 @@ async def _snmp_discover_host(host_ip: str, community: str = "public") -> dict |
     if_status_map = await _snmp_walk(snmp_engine, host_ip, community, OID_IF_STATUS)
 
     first_mac = None
-    for idx in sorted(if_indices):
-        idx_str = str(idx)
+    for if_idx in sorted(if_indices):
+        idx_str = str(if_idx)
         iface = {
-            "index": idx,
-            "name": if_name_map.get(f"{OID_IF_NAME}.{idx_str}", f"if{idx}"),
+            "index": if_idx,
+            "name": if_name_map.get(f"{OID_IF_NAME}.{idx_str}", f"if{if_idx}"),
             "mac": None,
             "status": "unknown",
         }
@@ -222,7 +226,7 @@ async def _snmp_discover_host(host_ip: str, community: str = "public") -> dict |
             "interface_count": len(interfaces),
         },
         "network_interfaces": interfaces,
-        "last_scanned_at": datetime.now(timezone.utc).isoformat(),
+        "last_scanned_at": datetime.now(UTC).isoformat(),
     }
 
 
@@ -247,12 +251,17 @@ async def _run_snmp_discovery_async(
     scan_id: str = "",
 ):
     """Run SNMP discovery: first ping-sweep to find live hosts, then SNMP only on live hosts."""
-    import ipaddress as ip_mod
+    from sqlalchemy import select
+
     from app.core.database import async_session_factory
+    from app.core.system_log import log_system
     from app.models.asset import Asset
     from app.models.discovery import DiscoveryScan
-    from app.core.system_log import log_system
-    from sqlalchemy import select
+
+    try:
+        tenant_uuid = UUID(tenant_id) if tenant_id else None
+    except ValueError:
+        tenant_uuid = None
 
     async with async_session_factory() as db:
         start_time = time.time()
@@ -265,7 +274,7 @@ async def _run_snmp_discovery_async(
                 source="CeleryWorker",
                 entity_type="asset_discovery",
                 task_id=scan_id,
-                tenant_id=tenant_id,
+                tenant_id=tenant_uuid,
             )
             await db.commit()
 
@@ -278,11 +287,12 @@ async def _run_snmp_discovery_async(
             live_ips = []
             live_map = {}
             for pr in ping_results:
-                if isinstance(pr, Exception):
+                ping_result = _as_result(pr)
+                if ping_result is None:
                     continue
-                if pr["is_alive"]:
-                    live_ips.append(pr["ip"])
-                    live_map[pr["ip"]] = pr
+                if ping_result["is_alive"]:
+                    live_ips.append(ping_result["ip"])
+                    live_map[ping_result["ip"]] = ping_result
 
             logger.info(f"SNMP discovery: ping sweep found {len(live_ips)}/{len(target_ips)} live hosts")
 
@@ -324,7 +334,7 @@ async def _run_snmp_discovery_async(
                     result = await db.execute(
                         select(Asset).where(
                             Asset.ip_address == ip,
-                            Asset.tenant_id == tenant_id,
+                            Asset.tenant_id == tenant_uuid,
                         )
                     )
                     existing = result.scalar_one_or_none()
@@ -338,14 +348,14 @@ async def _run_snmp_discovery_async(
                         existing.model = asset_data.get("model") or existing.model
                         existing.os_name = asset_data.get("os_name") or existing.os_name
                         existing.status = asset_data.get("status", "Online")
-                        existing.last_scanned_at = datetime.now(timezone.utc)
+                        existing.last_scanned_at = datetime.now(UTC)
                         existing.raw_scan_data = asset_data.get("raw_scan_data")
                         existing.network_interfaces = asset_data.get("network_interfaces")
                         db.add(existing)
                         updated += 1
                     else:
                         new_asset = Asset(
-                            tenant_id=tenant_id,
+                            tenant_id=tenant_uuid,
                             ip_address=asset_data["ip_address"],
                             mac_address=asset_data.get("mac_address"),
                             hostname=asset_data.get("hostname"),
@@ -355,7 +365,7 @@ async def _run_snmp_discovery_async(
                             model=asset_data.get("model"),
                             os_name=asset_data.get("os_name"),
                             status=asset_data.get("status", "Online"),
-                            last_scanned_at=datetime.now(timezone.utc),
+                            last_scanned_at=datetime.now(UTC),
                             raw_scan_data=asset_data.get("raw_scan_data"),
                             network_interfaces=asset_data.get("network_interfaces"),
                         )
@@ -367,10 +377,8 @@ async def _run_snmp_discovery_async(
                 except Exception as e:
                     logger.warning(f"SNMP discovery failed for {ip}: {e}")
                     snmp_failed += 1
-                    try:
+                    with contextlib.suppress(Exception):
                         await db.rollback()
-                    except Exception:
-                        pass
 
             elapsed_ms = int((time.time() - start_time) * 1000)
             summary = (
@@ -389,7 +397,7 @@ async def _run_snmp_discovery_async(
                     scan = scan_result.scalar_one_or_none()
                     if scan:
                         scan.status = "completed"
-                        scan.completed_at = datetime.now(timezone.utc)
+                        scan.completed_at = datetime.now(UTC)
                         scan.results = {
                             "total_targets": len(target_ips),
                             "live_hosts": len(live_ips),
@@ -413,7 +421,7 @@ async def _run_snmp_discovery_async(
                 entity_type="asset_discovery",
                 task_id=scan_id,
                 duration_ms=elapsed_ms,
-                tenant_id=tenant_id,
+                tenant_id=tenant_uuid,
             )
             await db.commit()
 
@@ -430,7 +438,7 @@ async def _run_snmp_discovery_async(
                     if scan:
                         scan.status = "failed"
                         scan.error_message = str(e)[:1000]
-                        scan.completed_at = datetime.now(timezone.utc)
+                        scan.completed_at = datetime.now(UTC)
                         db.add(scan)
                         await db.commit()
                 except Exception:
@@ -445,7 +453,7 @@ async def _run_snmp_discovery_async(
                     source="CeleryWorker",
                     entity_type="asset_discovery",
                     task_id=scan_id,
-                    tenant_id=tenant_id,
+                    tenant_id=tenant_uuid,
                 )
                 await db.commit()
             except Exception:
@@ -465,18 +473,235 @@ async def _ping_host_async(host_ip: str, semaphore: asyncio.Semaphore) -> dict:
             stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=3)
             output = stdout.decode("utf-8", errors="replace")
             response_time_ms = None
-            match = re.search(r"time[=]<(\d+\.?\d*)\s*ms", output)
+            match = re.search(r"time[=]<(\d+\.?\d*)\s*ms|time=(\d+\.?\d*)\s*ms", output)
             if match:
-                response_time_ms = float(match.group(1))
+                response_time_ms = float(match.group(1) or match.group(2))
             return {"ip": host_ip, "is_alive": proc.returncode == 0, "response_time_ms": response_time_ms}
-        except (asyncio.TimeoutError, Exception):
+        except (TimeoutError, Exception):
             return {"ip": host_ip, "is_alive": False, "response_time_ms": None}
+
+
+# ---------------------------------------------------------------------------
+# PING / FULL Asset Discovery
+# ---------------------------------------------------------------------------
+
+async def _run_ping_asset_discovery_async(
+    tenant_id: str,
+    target_ips: list[str],
+    scan_id: str = "",
+    with_snmp: bool = False,
+    community: str = "public",
+):
+    """Run PING or FULL asset discovery: ping sweep first, then optionally SNMP
+    on live hosts (FULL). Upserts/updates Asset records for live hosts."""
+    from sqlalchemy import select
+
+    from app.core.database import async_session_factory
+    from app.core.system_log import log_system
+    from app.models.asset import Asset
+    from app.models.discovery import DiscoveryScan
+
+    try:
+        tenant_uuid = UUID(tenant_id) if tenant_id else None
+    except ValueError:
+        tenant_uuid = None
+
+    async with async_session_factory() as db:
+        start_time = time.time()
+        try:
+            label = "FULL" if with_snmp else "PING"
+            await log_system(
+                db=db,
+                level="info",
+                category="discovery",
+                message=f"Starting {label} asset discovery on {len(target_ips)} targets",
+                source="CeleryWorker",
+                entity_type="asset_discovery",
+                task_id=scan_id,
+                tenant_id=tenant_uuid,
+            )
+            await db.commit()
+
+            # Phase 1: Ping sweep
+            concurrency = min(80, len(target_ips))
+            semaphore = asyncio.Semaphore(concurrency)
+            ping_tasks = [_ping_host_async(ip, semaphore) for ip in target_ips]
+            ping_results = await asyncio.gather(*ping_tasks, return_exceptions=True)
+
+            live_ips = []
+            live_map = {}
+            for pr in ping_results:
+                ping_result = _as_result(pr)
+                if ping_result is None:
+                    continue
+                if ping_result["is_alive"]:
+                    live_ips.append(ping_result["ip"])
+                    live_map[ping_result["ip"]] = ping_result
+
+            logger.info(f"{label} discovery: ping sweep found {len(live_ips)}/{len(target_ips)} live hosts")
+
+            # Phase 2: optionally SNMP on live hosts (FULL)
+            discovered = 0
+            updated = 0
+            snmp_failed = 0
+            offline_skipped = len(target_ips) - len(live_ips)
+
+            for ip in live_ips:
+                asset_data = None
+                if with_snmp:
+                    try:
+                        asset_data = await _snmp_discover_host(ip, community)
+                    except Exception:
+                        asset_data = None
+                    if asset_data is None:
+                        snmp_failed += 1
+
+                # Even if SNMP failed, a live host is still an asset (ping-known)
+                result = await db.execute(
+                    select(Asset).where(
+                        Asset.ip_address == ip,
+                        Asset.tenant_id == tenant_uuid,
+                    )
+                )
+                existing = result.scalar_one_or_none()
+
+                if asset_data is None:
+                    # Ping-only record
+                    if existing:
+                        existing.status = "Online"
+                        existing.last_scanned_at = datetime.now(UTC)
+                        db.add(existing)
+                        updated += 1
+                    else:
+                        db.add(Asset(
+                            tenant_id=tenant_uuid,
+                            ip_address=ip,
+                            status="Online",
+                            device_type="Unknown",
+                            discovery_source="PING",
+                            last_scanned_at=datetime.now(UTC),
+                        ))
+                        discovered += 1
+                    await db.commit()
+                    continue
+
+                if existing:
+                    existing.hostname = asset_data.get("hostname") or existing.hostname
+                    existing.mac_address = asset_data.get("mac_address") or existing.mac_address
+                    existing.device_type = asset_data.get("device_type") or existing.device_type
+                    existing.discovery_source = "SNMP"
+                    existing.manufacturer = asset_data.get("manufacturer") or existing.manufacturer
+                    existing.model = asset_data.get("model") or existing.model
+                    existing.os_name = asset_data.get("os_name") or existing.os_name
+                    existing.status = asset_data.get("status", "Online")
+                    existing.last_scanned_at = datetime.now(UTC)
+                    existing.raw_scan_data = asset_data.get("raw_scan_data")
+                    existing.network_interfaces = asset_data.get("network_interfaces")
+                    db.add(existing)
+                    updated += 1
+                else:
+                    db.add(Asset(
+                        tenant_id=tenant_uuid,
+                        ip_address=asset_data["ip_address"],
+                        mac_address=asset_data.get("mac_address"),
+                        hostname=asset_data.get("hostname"),
+                        device_type=asset_data.get("device_type", "Unknown"),
+                        discovery_source="SNMP",
+                        manufacturer=asset_data.get("manufacturer"),
+                        model=asset_data.get("model"),
+                        os_name=asset_data.get("os_name"),
+                        status=asset_data.get("status", "Online"),
+                        last_scanned_at=datetime.now(UTC),
+                        raw_scan_data=asset_data.get("raw_scan_data"),
+                        network_interfaces=asset_data.get("network_interfaces"),
+                    ))
+                    discovered += 1
+
+                await db.commit()
+
+            elapsed_ms = int((time.time() - start_time) * 1000)
+            summary = (
+                f"{label} discovery completed: {discovered} new assets, "
+                f"{updated} updated, {snmp_failed} SNMP-failed, "
+                f"{offline_skipped} offline (ping) out of {len(target_ips)} targets in {elapsed_ms}ms"
+            )
+            logger.info(summary)
+
+            if scan_id:
+                try:
+                    scan_result = await db.execute(
+                        select(DiscoveryScan).where(DiscoveryScan.id == scan_id)
+                    )
+                    scan = scan_result.scalar_one_or_none()
+                    if scan:
+                        scan.status = "completed"
+                        scan.completed_at = datetime.now(UTC)
+                        scan.results = {
+                            "total_targets": len(target_ips),
+                            "live_hosts": len(live_ips),
+                            "discovered": discovered,
+                            "updated": updated,
+                            "snmp_failed": snmp_failed,
+                            "offline_skipped": offline_skipped,
+                            "duration_ms": elapsed_ms,
+                        }
+                        db.add(scan)
+                        await db.commit()
+                except Exception:
+                    pass
+
+            await log_system(
+                db=db,
+                level="info",
+                category="discovery",
+                message=summary,
+                source="CeleryWorker",
+                entity_type="asset_discovery",
+                task_id=scan_id,
+                duration_ms=elapsed_ms,
+                tenant_id=tenant_uuid,
+            )
+            await db.commit()
+
+            return {"discovered": discovered, "updated": updated, "failed": snmp_failed, "offline": offline_skipped, "total": len(target_ips)}
+
+        except Exception as e:
+            logger.error(f"{label} discovery task failed: {e}")
+            if scan_id:
+                try:
+                    scan_result = await db.execute(
+                        select(DiscoveryScan).where(DiscoveryScan.id == scan_id)
+                    )
+                    scan = scan_result.scalar_one_or_none()
+                    if scan:
+                        scan.status = "failed"
+                        scan.error_message = str(e)[:1000]
+                        scan.completed_at = datetime.now(UTC)
+                        db.add(scan)
+                        await db.commit()
+                except Exception:
+                    pass
+            try:
+                await log_system(
+                    db=db,
+                    level="error",
+                    category="discovery",
+                    message=f"{label} discovery failed: {str(e)[:500]}",
+                    details=str(e),
+                    source="CeleryWorker",
+                    entity_type="asset_discovery",
+                    task_id=scan_id,
+                    tenant_id=tenant_uuid,
+                )
+                await db.commit()
+            except Exception:
+                pass
+            raise
 
 
 # ---------------------------------------------------------------------------
 # WinRM Discovery (via pypsrp)
 # ---------------------------------------------------------------------------
-
 POWERSHELL_HARDWARE_SCRIPT = r"""
 $cs = Get-CimInstance Win32_ComputerSystem
 $bios = Get-CimInstance Win32_BIOS
@@ -523,15 +748,13 @@ async def _winrm_discover_host(
 ) -> dict | None:
     """Discover a Windows host via WinRM (pypsrp). Returns asset data dict or None."""
     try:
-        from pypsrp.wsman import WSMan
         from pypsrp.shell import PowerShell, RunspacePool
+        from pypsrp.wsman import WSMan
     except ImportError:
         logger.warning("pypsrp not installed, cannot run WinRM discovery")
         return None
 
     try:
-        scheme = "https" if use_ssl else "http"
-        endpoint = f"{scheme}://{host_ip}:{port}/wsman"
         wsman = WSMan(
             server=host_ip,
             port=port,
@@ -592,7 +815,7 @@ async def _winrm_discover_host(
                     "sys_descr": f"{hw_data.get('manufacturer', '')} {hw_data.get('model', '')} | {hw_data.get('os_name', '')} {hw_data.get('os_version', '')}",
                 },
                 "network_interfaces": interfaces,
-                "last_scanned_at": datetime.now(timezone.utc).isoformat(),
+                "last_scanned_at": datetime.now(UTC).isoformat(),
             }
 
     except ImportError:
@@ -613,11 +836,17 @@ async def _run_winrm_discovery_async(
     scan_id: str = "",
 ):
     """Run WinRM discovery: first ping-sweep, then WinRM only on live hosts."""
+    from sqlalchemy import select
+
     from app.core.database import async_session_factory
+    from app.core.system_log import log_system
     from app.models.asset import Asset
     from app.models.discovery import DiscoveryScan
-    from app.core.system_log import log_system
-    from sqlalchemy import select
+
+    try:
+        tenant_uuid = UUID(tenant_id) if tenant_id else None
+    except ValueError:
+        tenant_uuid = None
 
     async with async_session_factory() as db:
         start_time = time.time()
@@ -630,7 +859,7 @@ async def _run_winrm_discovery_async(
                 source="CeleryWorker",
                 entity_type="asset_discovery",
                 task_id=scan_id,
-                tenant_id=tenant_id,
+                tenant_id=tenant_uuid,
             )
             await db.commit()
 
@@ -642,10 +871,11 @@ async def _run_winrm_discovery_async(
 
             live_ips = []
             for pr in ping_results:
-                if isinstance(pr, Exception):
+                ping_result = _as_result(pr)
+                if ping_result is None:
                     continue
-                if pr["is_alive"]:
-                    live_ips.append(pr["ip"])
+                if ping_result["is_alive"]:
+                    live_ips.append(ping_result["ip"])
 
             logger.info(f"WinRM discovery: ping sweep found {len(live_ips)}/{len(target_ips)} live hosts")
 
@@ -688,7 +918,7 @@ async def _run_winrm_discovery_async(
                     result = await db.execute(
                         select(Asset).where(
                             Asset.ip_address == ip,
-                            Asset.tenant_id == tenant_id,
+                            Asset.tenant_id == tenant_uuid,
                         )
                     )
                     existing = result.scalar_one_or_none()
@@ -707,14 +937,14 @@ async def _run_winrm_discovery_async(
                         existing.cpu_cores = asset_data.get("cpu_cores") or existing.cpu_cores
                         existing.ram_gb = asset_data.get("ram_gb") or existing.ram_gb
                         existing.status = asset_data.get("status", "Online")
-                        existing.last_scanned_at = datetime.now(timezone.utc)
+                        existing.last_scanned_at = datetime.now(UTC)
                         existing.raw_scan_data = asset_data.get("raw_scan_data")
                         existing.network_interfaces = asset_data.get("network_interfaces")
                         db.add(existing)
                         updated += 1
                     else:
                         new_asset = Asset(
-                            tenant_id=tenant_id,
+                            tenant_id=tenant_uuid,
                             ip_address=asset_data["ip_address"],
                             mac_address=asset_data.get("mac_address"),
                             hostname=asset_data.get("hostname"),
@@ -729,7 +959,7 @@ async def _run_winrm_discovery_async(
                             cpu_cores=asset_data.get("cpu_cores"),
                             ram_gb=asset_data.get("ram_gb"),
                             status=asset_data.get("status", "Online"),
-                            last_scanned_at=datetime.now(timezone.utc),
+                            last_scanned_at=datetime.now(UTC),
                             raw_scan_data=asset_data.get("raw_scan_data"),
                             network_interfaces=asset_data.get("network_interfaces"),
                         )
@@ -741,10 +971,8 @@ async def _run_winrm_discovery_async(
                 except Exception as e:
                     logger.warning(f"WinRM discovery failed for {ip}: {e}")
                     failed += 1
-                    try:
+                    with contextlib.suppress(Exception):
                         await db.rollback()
-                    except Exception:
-                        pass
 
             elapsed_ms = int((time.time() - start_time) * 1000)
             summary = (
@@ -763,7 +991,7 @@ async def _run_winrm_discovery_async(
                     scan = scan_result.scalar_one_or_none()
                     if scan:
                         scan.status = "completed"
-                        scan.completed_at = datetime.now(timezone.utc)
+                        scan.completed_at = datetime.now(UTC)
                         scan.results = {
                             "total_targets": len(target_ips),
                             "live_hosts": len(live_ips),
@@ -787,7 +1015,7 @@ async def _run_winrm_discovery_async(
                 entity_type="asset_discovery",
                 task_id=scan_id,
                 duration_ms=elapsed_ms,
-                tenant_id=tenant_id,
+                tenant_id=tenant_uuid,
             )
             await db.commit()
 
@@ -804,7 +1032,7 @@ async def _run_winrm_discovery_async(
                     if scan:
                         scan.status = "failed"
                         scan.error_message = str(e)[:1000]
-                        scan.completed_at = datetime.now(timezone.utc)
+                        scan.completed_at = datetime.now(UTC)
                         db.add(scan)
                         await db.commit()
                 except Exception:
@@ -819,7 +1047,7 @@ async def _run_winrm_discovery_async(
                     source="CeleryWorker",
                     entity_type="asset_discovery",
                     task_id=scan_id,
-                    tenant_id=tenant_id,
+                    tenant_id=tenant_uuid,
                 )
                 await db.commit()
             except Exception:

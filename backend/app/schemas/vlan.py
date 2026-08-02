@@ -1,7 +1,6 @@
 """VLAN schemas."""
 
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -11,8 +10,8 @@ class VLANBase(BaseModel):
     """Base VLAN schema with common fields."""
     vlan_id: int
     name: str
-    description: Optional[str] = None
-    site_id: Optional[UUID] = None
+    description: str | None = None
+    site_id: UUID | None = None
 
 
 class VLANCreate(VLANBase):
@@ -22,10 +21,10 @@ class VLANCreate(VLANBase):
 
 class VLANUpdate(BaseModel):
     """Schema for updating a VLAN."""
-    vlan_id: Optional[int] = None
-    name: Optional[str] = None
-    description: Optional[str] = None
-    site_id: Optional[UUID] = None
+    vlan_id: int | None = None
+    name: str | None = None
+    description: str | None = None
+    site_id: UUID | None = None
 
 
 class VLANResponse(VLANBase):

@@ -1,7 +1,6 @@
 """WinRM Credential schemas."""
 
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -15,7 +14,7 @@ class WinRMCredentialBase(BaseModel):
     port: int = 5985
     use_ssl: bool = False
     auth_type: str = "basic"
-    domain: Optional[str] = None
+    domain: str | None = None
 
 
 class WinRMCredentialCreate(WinRMCredentialBase):
@@ -25,14 +24,14 @@ class WinRMCredentialCreate(WinRMCredentialBase):
 
 class WinRMCredentialUpdate(BaseModel):
     """Schema for updating a WinRM credential."""
-    name: Optional[str] = None
-    username: Optional[str] = None
-    password: Optional[str] = None
-    port: Optional[int] = None
-    use_ssl: Optional[bool] = None
-    auth_type: Optional[str] = None
-    domain: Optional[str] = None
-    is_active: Optional[bool] = None
+    name: str | None = None
+    username: str | None = None
+    password: str | None = None
+    port: int | None = None
+    use_ssl: bool | None = None
+    auth_type: str | None = None
+    domain: str | None = None
+    is_active: bool | None = None
 
 
 class WinRMCredentialResponse(BaseModel):
@@ -44,7 +43,7 @@ class WinRMCredentialResponse(BaseModel):
     port: int
     use_ssl: bool
     auth_type: str
-    domain: Optional[str] = None
+    domain: str | None = None
     is_active: bool
     created_at: datetime
     updated_at: datetime

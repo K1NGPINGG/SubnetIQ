@@ -1,8 +1,8 @@
 """Authentication schemas."""
 
-from typing import Any, Optional
+from typing import Any
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 
 
 class LoginRequest(BaseModel):
@@ -17,7 +17,7 @@ class TokenResponse(BaseModel):
     refresh_token: str
     token_type: str = "bearer"
     requires_mfa: bool = False
-    user: Optional[Any] = None
+    user: Any | None = None
 
 
 class TokenRefreshRequest(BaseModel):

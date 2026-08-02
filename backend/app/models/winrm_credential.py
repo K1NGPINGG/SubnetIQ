@@ -1,13 +1,11 @@
 """WinRM Credential model for Windows discovery."""
 
-import uuid
-from typing import Optional
 
-from sqlalchemy import String, Boolean, Integer
+from sqlalchemy import Boolean, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, validates
 
-from app.models.base import Base, UUIDPrimaryKeyMixin, TimestampMixin, TenantMixin
-from app.core.encryption import encrypt_value, decrypt_value
+from app.core.encryption import decrypt_value, encrypt_value
+from app.models.base import Base, TenantMixin, TimestampMixin, UUIDPrimaryKeyMixin
 
 
 class WinRMCredential(Base, UUIDPrimaryKeyMixin, TimestampMixin, TenantMixin):
@@ -21,7 +19,7 @@ class WinRMCredential(Base, UUIDPrimaryKeyMixin, TimestampMixin, TenantMixin):
     port: Mapped[int] = mapped_column(Integer, nullable=False, default=5985)
     use_ssl: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     auth_type: Mapped[str] = mapped_column(String(20), nullable=False, default="basic")
-    domain: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    domain: Mapped[str | None] = mapped_column(String(255), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     @property

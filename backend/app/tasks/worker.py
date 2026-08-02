@@ -1,21 +1,27 @@
 """Celery worker configuration and background tasks."""
 
 import asyncio
+import contextlib
 import ipaddress
 import logging
 import re
 import socket
-import time
-from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timezone
-from typing import Optional
-from uuid import UUID
+from datetime import UTC, datetime
+from typing import Any, cast
 
 from celery import Celery
 
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
+
+
+def _as_probe_result(
+    item: dict[str, Any] | BaseException,
+) -> dict[str, Any] | None:
+    """Return the dict if the gathered item is not an exception."""
+    return cast(dict[str, Any], item) if not isinstance(item, BaseException) else None
+
 
 # Create Celery app
 celery_app = Celery(
@@ -67,16 +73,16 @@ async def _ping_host(host_ip: str, timeout: int = 1) -> dict:
 
         # Parse response time from "time=1.23 ms"
         response_time_ms = None
-        match = re.search(r"time[=]<(\d+\.?\d*)\s*ms", output)
+        match = re.search(r"time[=]<(\d+\.?\d*)\s*ms|time=(\d+\.?\d*)\s*ms", output)
         if match:
-            response_time_ms = float(match.group(1))
+            response_time_ms = float(match.group(1) or match.group(2))
 
         return {
             "is_alive": proc.returncode == 0,
             "response_time_ms": response_time_ms,
             "method": "icmp",
         }
-    except asyncio.TimeoutError:
+    except TimeoutError:
         return {"is_alive": False, "response_time_ms": None, "method": "icmp"}
     except Exception as e:
         logger.debug(f"Ping {host_ip} failed: {e}")
@@ -116,9 +122,9 @@ def _read_arp_table() -> list[str]:
     arp_paths = ["/host/arp", "/proc/net/arp"]
     for path in arp_paths:
         try:
-            with open(path, "r") as f:
+            with open(path) as f:
                 lines = f.readlines()
-                return [l.strip() for l in lines[1:] if l.strip()]
+                return [line.strip() for line in lines[1:] if line.strip()]
         except (FileNotFoundError, PermissionError):
             continue
     return []
@@ -140,7 +146,7 @@ async def _probe_host(
             "scan_method": scan_type,
         }
 
-        if scan_type in ("ping", "full"):
+        if scan_type in ("ping", "full", "icmp", "icmp_and_snmp"):
             ping_result = await _ping_host(host_ip)
             result["is_alive"] = ping_result["is_alive"]
             result["response_time_ms"] = ping_result["response_time_ms"]
@@ -158,7 +164,7 @@ async def _probe_host(
             if dns_result["hostname"]:
                 result["hostname"] = dns_result["hostname"]
 
-        if scan_type == "snmp":
+        if scan_type in ("snmp", "icmp_and_snmp", "full"):
             # SNMP scan: try connecting to UDP port 161
             # If we can send a packet without immediate rejection, mark as alive
             try:
@@ -167,7 +173,6 @@ async def _probe_host(
                 sock.settimeout(1)
                 # Try SNMP GET request for sysDescr (.1.3.6.1.2.1.1.1.0)
                 # Simple SNMPv2c GET request
-                import struct
                 # Build minimal SNMP GET request
                 oid_bytes = bytes([0x06, 0x0a, 0x2b, 0x06, 0x01, 0x02, 0x01, 0x01, 0x01, 0x00])
                 snmp_body = (
@@ -186,31 +191,29 @@ async def _probe_host(
                     lambda: sock.sendto(snmp_packet, (host_ip, 161))
                 )
                 # Wait for response
-                data = await loop.run_in_executor(
-                    None,
-                    lambda: sock.recv(1024) if sock.recv(1024) else b""
-                )
+                data = await loop.run_in_executor(None, lambda: sock.recv(1024))
                 if data:
                     result["is_alive"] = True
                     result["scan_method"] = "snmp"
-            except (socket.timeout, OSError, Exception):
-                result["is_alive"] = False
+            except (TimeoutError, OSError, Exception):
+                # Preserve aliveness already established by ping/ARP for combined scans
+                if scan_type == "snmp":
+                    result["is_alive"] = False
             finally:
-                try:
+                with contextlib.suppress(Exception):
                     sock.close()
-                except Exception:
-                    pass
 
         return result
 
 
 async def _run_discovery_scan_async(scan_id: str):
     """Async implementation of the discovery scan with real network probes."""
+    from sqlalchemy import select
+
     from app.core.database import async_session_factory
     from app.models.discovery import DiscoveryScan
-    from app.models.subnet import Subnet
     from app.models.ip_address import IPAddress
-    from sqlalchemy import select
+    from app.models.subnet import Subnet
 
     async with async_session_factory() as db:
         try:
@@ -223,7 +226,7 @@ async def _run_discovery_scan_async(scan_id: str):
                 return
 
             scan.status = "running"
-            scan.started_at = datetime.now(timezone.utc)
+            scan.started_at = datetime.now(UTC)
             db.add(scan)
             await db.commit()
 
@@ -234,7 +237,7 @@ async def _run_discovery_scan_async(scan_id: str):
             if subnet is None:
                 scan.status = "failed"
                 scan.error_message = "Subnet not found"
-                scan.completed_at = datetime.now(timezone.utc)
+                scan.completed_at = datetime.now(UTC)
                 db.add(scan)
                 await db.commit()
                 return
@@ -276,9 +279,10 @@ async def _run_discovery_scan_async(scan_id: str):
             alive_count = 0
             dead_count = 0
 
-            for probe in probe_results:
-                if isinstance(probe, Exception):
-                    logger.warning(f"Probe exception: {probe}")
+            for raw_probe in probe_results:
+                probe = _as_probe_result(raw_probe)
+                if probe is None:
+                    logger.warning("Probe exception: %s", raw_probe)
                     continue
 
                 host_ip = probe["address"]
@@ -327,7 +331,7 @@ async def _run_discovery_scan_async(scan_id: str):
                 "dead_hosts": dead_count,
             }
             scan.status = "completed"
-            scan.completed_at = datetime.now(timezone.utc)
+            scan.completed_at = datetime.now(UTC)
             db.add(scan)
             await db.commit()
 
@@ -338,10 +342,12 @@ async def _run_discovery_scan_async(scan_id: str):
 
         except Exception as e:
             logger.error(f"Discovery scan {scan_id} failed: {str(e)}")
+            if scan is None:
+                raise
             try:
                 scan.status = "failed"
                 scan.error_message = str(e)
-                scan.completed_at = datetime.now(timezone.utc)
+                scan.completed_at = datetime.now(UTC)
                 db.add(scan)
                 await db.commit()
             except Exception:
@@ -360,17 +366,18 @@ def run_discovery_scan(self, scan_id: str):
 
 async def _check_scheduled_scans_async():
     """Check for scheduled scans that are due and dispatch them."""
+    from sqlalchemy import select
+
     from app.core.database import async_session_factory
     from app.models.discovery import DiscoveryScan
-    from sqlalchemy import select
 
     async with async_session_factory() as db:
         try:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             result = await db.execute(
                 select(DiscoveryScan).where(
                     DiscoveryScan.status == "scheduled",
-                    DiscoveryScan.is_scheduled == True,
+                    DiscoveryScan.is_scheduled,
                     DiscoveryScan.schedule_time <= now,
                 )
             )
@@ -408,13 +415,14 @@ def check_scheduled_scans(self):
 
 async def _cleanup_expired_ips_async():
     """Async implementation of expired IP cleanup."""
+    from sqlalchemy import select
+
     from app.core.database import async_session_factory
     from app.models.ip_address import IPAddress
-    from sqlalchemy import select
 
     async with async_session_factory() as db:
         try:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             result = await db.execute(
                 select(IPAddress).where(
                     IPAddress.expires_at.isnot(None),
@@ -462,6 +470,16 @@ def run_snmp_asset_discovery(self, tenant_id: str, target_ips: list, community: 
     logger.info(f"Starting SNMP asset discovery for {len(target_ips)} targets, tenant={tenant_id}")
     loop = get_or_create_eventloop()
     loop.run_until_complete(_run_snmp_discovery_async(tenant_id, target_ips, community, scan_id or str(self.request.id or "")))
+    return {"scan_id": scan_id or str(self.request.id), "status": "completed"}
+
+
+@celery_app.task(bind=True, name="tasks.run_ping_asset_discovery")
+def run_ping_asset_discovery(self, tenant_id: str, target_ips: list, scan_id: str = "", with_snmp: bool = False, community: str = "public"):
+    """Celery task to run PING (or FULL = ping + SNMP) based asset discovery."""
+    from app.tasks.discovery import _run_ping_asset_discovery_async
+    logger.info(f"Starting PING/FULL asset discovery for {len(target_ips)} targets, tenant={tenant_id}")
+    loop = get_or_create_eventloop()
+    loop.run_until_complete(_run_ping_asset_discovery_async(tenant_id, target_ips, scan_id or str(self.request.id or ""), with_snmp, community))
     return {"scan_id": scan_id or str(self.request.id), "status": "completed"}
 
 

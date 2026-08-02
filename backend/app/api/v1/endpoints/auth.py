@@ -2,8 +2,6 @@
 
 import re
 
-from typing import Optional
-
 import pyotp
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, field_validator
@@ -11,6 +9,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.core.rate_limit import limiter
+from app.core.rbac import effective_permissions
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -19,16 +19,14 @@ from app.core.security import (
     hash_password,
     verify_password,
 )
-from app.core.rate_limit import limiter
 from app.models.user import User
 from app.schemas.auth import (
-    TokenRefreshRequest,
-    TokenResponse,
+    LoginRequest,
     MFASetupResponse,
     MFAVerifyRequest,
-    LoginRequest,
+    TokenRefreshRequest,
+    TokenResponse,
 )
-
 
 router = APIRouter()
 
@@ -85,7 +83,7 @@ async def login(
 ):
     """Authenticate a user with email and password, returning JWT tokens."""
     result = await db.execute(
-        select(User).where(User.email == login_req.email, User.is_active == True)
+        select(User).where(User.email == login_req.email, User.is_active)
     )
     user = result.scalar_one_or_none()
 
@@ -99,7 +97,7 @@ async def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    if not verify_password(login_req.password, user.hashed_password):
+    if not user.hashed_password or not verify_password(login_req.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
@@ -225,7 +223,7 @@ async def refresh_token(
         )
 
     user_id = payload.get("sub")
-    result = await db.execute(select(User).where(User.id == user_id, User.is_active == True))
+    result = await db.execute(select(User).where(User.id == user_id, User.is_active))
     user = result.scalar_one_or_none()
 
     if user is None:
@@ -362,7 +360,9 @@ async def change_password(
     db: AsyncSession = Depends(get_db),
 ):
     """Change the current user's password after verifying the old password."""
-    if not verify_password(body.current_password, current_user.hashed_password):
+    if not current_user.hashed_password or not verify_password(
+        body.current_password, current_user.hashed_password
+    ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Current password is incorrect",
@@ -382,8 +382,8 @@ async def change_password(
 
 class ProfileUpdateRequest(BaseModel):
     """Request body for updating own profile."""
-    display_name: Optional[str] = None
-    email: Optional[str] = None
+    display_name: str | None = None
+    email: str | None = None
 
     @field_validator("email")
     @classmethod
@@ -405,6 +405,7 @@ async def get_me(current_user: User = Depends(get_current_user)):
         "mfa_enabled": current_user.mfa_enabled,
         "mfa_enforced": current_user.mfa_enforced,
         "is_active": current_user.is_active,
+        "permissions": effective_permissions(current_user),
     }
 
 
@@ -444,4 +445,5 @@ async def update_me(
         "mfa_enabled": current_user.mfa_enabled,
         "mfa_enforced": current_user.mfa_enforced,
         "is_active": current_user.is_active,
+        "permissions": effective_permissions(current_user),
     }

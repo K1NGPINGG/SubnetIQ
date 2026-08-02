@@ -1,6 +1,5 @@
 """Application configuration using pydantic-settings."""
 
-from typing import List
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -20,8 +19,15 @@ class Settings(BaseSettings):
     APP_NAME: str = "SubnetIQ"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
+
+    # Release updates
+    UPDATE_ENABLED: bool = True
+    GITHUB_OWNER: str = "K1NGPINGG"
+    GITHUB_REPO: str = "SubnetIQ"
+    GITHUB_API_URL: str = "https://api.github.com"
+    UPDATE_DATA_DIR: str = "/updates"
     SECRET_KEY: str = "change-me-in-production"
-    ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173"]
+    ALLOWED_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:5173"]
 
     # API
     API_V1_PREFIX: str = "/api/v1"

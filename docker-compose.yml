@@ -49,6 +49,7 @@ services:
     volumes:
       - ./backend:/app
       - tenant_logos:/app/static/tenants
+      - ./.updates:/updates
     # No exposed port — frontend nginx proxies to it
     depends_on:
       postgres:
@@ -90,6 +91,24 @@ services:
       - "3000:80"
     depends_on:
       - backend
+
+  updater:
+    image: docker:git
+    container_name: subnetiq_updater
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /home/ipam/GG_IPAM:/home/ipam/GG_IPAM
+      - ./.updates:/updates
+      - ./updater/updater.sh:/updater/updater.sh:ro
+    group_add:
+      - "${DOCKER_GID:-999}"
+    environment:
+      UPDATE_STACK_DIR: /home/ipam/GG_IPAM
+      UPDATE_REMOTE: https://github.com/K1NGPINGG/SubnetIQ.git
+      UPDATE_DATA_DIR: /updates
+    entrypoint: ["/bin/sh"]
+    command: ["/updater/updater.sh"]
 
 volumes:
   postgres_data:

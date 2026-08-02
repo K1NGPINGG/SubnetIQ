@@ -5,10 +5,17 @@ A modern IP Address Management (IPAM) platform built with FastAPI, React, Postgr
 ## Features
 
 - **IP Address Management** — subnet hierarchy, IP allocation/deallocation, utilization tracking
+- **Address Hierarchy** — VRFs, RIRs, Aggregates, IP Ranges, and ASNs for structured address space
 - **Site & VLAN Management** — organize assets by location and network segment
 - **Asset Discovery** — SNMP and WinRM scanning for automatic inventory
 - **Dashboard** — real-time overview of network health, utilization, and alerts
 - **Map View** — interactive site map with location pins
+- **Tags & Custom Fields** — enrich subnets, IPs, and sites with metadata
+- **Validation Rules** — enforce IP allocation policy at creation time
+- **Approval Workflow** — request/approve/reject sensitive IP lifecycle changes
+- **Webhooks** — notify external systems on IP create/update/delete
+- **Global Search** — one box to find subnets, IPs, sites, and assets
+- **System Logs** — backend application logs with level/category/source filters
 - **Multi-Tenant** — isolated environments with role-based access control
 - **MFA Support** — TOTP-based multi-factor authentication
 - **Audit Logging** — full audit trail of all changes
@@ -18,11 +25,14 @@ A modern IP Address Management (IPAM) platform built with FastAPI, React, Postgr
 
 | Layer | Technology |
 |-------|-----------|
-| Backend | Python 3.12, FastAPI, SQLAlchemy 2.0, Celery |
-| Frontend | React 19, TypeScript, Vite 6, TanStack Table, Tailwind CSS v4 |
+| Backend | Python 3.12, FastAPI, SQLAlchemy 2.0 (async), Alembic, Pydantic v2, Celery + Redis, uvicorn |
+| Network Discovery | pysnmp-lextudio (SNMP v1/v2c/v3) |
+| WinRM Discovery | pypsrp (PowerShell Remoting / CIM-WMI) |
+| Security | JWT (python-jose), bcrypt/passlib, pyotp (TOTP MFA), Fernet encryption, slowapi (rate limiting) |
+| Frontend | React 19, TypeScript, Vite 6, Tailwind CSS v4, TanStack Query, TanStack Table, Zustand, React Hook Form + Zod, Recharts, Leaflet, axios, lucide-react |
 | Database | PostgreSQL 16, Redis 7 |
-| Auth | JWT, bcrypt, TOTP MFA |
-| Deployment | Docker Compose |
+| Deployment | Docker Compose, Nginx (SPA reverse proxy) |
+| Quality | pytest, pytest-asyncio, ruff, mypy, GitHub Actions CI |
 
 ## Getting Started
 
@@ -68,14 +78,14 @@ SubnetIQ/
 │   │   ├── models/       # SQLAlchemy models
 │   │   ├── schemas/      # Pydantic schemas
 │   │   └── tasks/        # Celery tasks (discovery, SNMP, WinRM)
+│   ├── alembic/          # Database migrations
 │   └── Dockerfile
-├── frontend-src/         # React application source
-│   ├── src/
-│   │   ├── components/   # Reusable UI components
-│   │   ├── hooks/        # React Query hooks
-│   │   ├── pages/        # Route pages
-│   │   └── shared/       # Stores, API client, utilities
-│   └── package.json
+├── frontend/             # React application (Docker build context)
+│   └── src/
+│       ├── components/   # Reusable UI components
+│       ├── hooks/        # React Query hooks
+│       ├── pages/        # Route pages
+│       └── shared/       # Stores, API client, utilities
 ├── docker-compose.yml    # Service orchestration
 ├── .env.example          # Environment template
 └── README.md

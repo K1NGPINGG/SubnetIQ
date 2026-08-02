@@ -1,7 +1,6 @@
 """Site schemas."""
 
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -11,11 +10,11 @@ class SiteBase(BaseModel):
     """Base site schema with common fields."""
     name: str
     code: str
-    address: Optional[str] = None
-    city: Optional[str] = None
-    country: Optional[str] = None
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
+    address: str | None = None
+    city: str | None = None
+    country: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
 
 
 class SiteCreate(SiteBase):
@@ -25,13 +24,13 @@ class SiteCreate(SiteBase):
 
 class SiteUpdate(BaseModel):
     """Schema for updating a site."""
-    name: Optional[str] = None
-    code: Optional[str] = None
-    address: Optional[str] = None
-    city: Optional[str] = None
-    country: Optional[str] = None
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
+    name: str | None = None
+    code: str | None = None
+    address: str | None = None
+    city: str | None = None
+    country: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
 
 
 class SiteResponse(SiteBase):

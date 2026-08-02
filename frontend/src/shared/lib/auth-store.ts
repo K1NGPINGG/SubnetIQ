@@ -8,6 +8,7 @@ interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
   login: (user: UserInfo, accessToken: string, refreshToken: string) => void;
+  updateProfile: (user: UserInfo) => void;
   logout: () => void;
 }
 
@@ -37,6 +38,9 @@ export const useAuthStore = create<AuthState>()(
           accessToken: null,
           refreshToken: null,
         });
+      },
+      updateProfile: (user) => {
+        set({ user });
       },
     }),
     {

@@ -1,7 +1,6 @@
 """SNMP Credential schemas."""
 
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -11,13 +10,13 @@ class SNMPCredentialBase(BaseModel):
     """Base SNMP credential schema."""
     name: str
     version: str = "v2c"
-    community_string: Optional[str] = None
-    v3_username: Optional[str] = None
-    v3_auth_protocol: Optional[str] = None
-    v3_auth_passphrase: Optional[str] = None
-    v3_priv_protocol: Optional[str] = None
-    v3_priv_passphrase: Optional[str] = None
-    v3_security_level: Optional[str] = None
+    community_string: str | None = None
+    v3_username: str | None = None
+    v3_auth_protocol: str | None = None
+    v3_auth_passphrase: str | None = None
+    v3_priv_protocol: str | None = None
+    v3_priv_passphrase: str | None = None
+    v3_security_level: str | None = None
 
 
 class SNMPCredentialCreate(SNMPCredentialBase):
@@ -27,16 +26,16 @@ class SNMPCredentialCreate(SNMPCredentialBase):
 
 class SNMPCredentialUpdate(BaseModel):
     """Schema for updating an SNMP credential."""
-    name: Optional[str] = None
-    version: Optional[str] = None
-    community_string: Optional[str] = None
-    v3_username: Optional[str] = None
-    v3_auth_protocol: Optional[str] = None
-    v3_auth_passphrase: Optional[str] = None
-    v3_priv_protocol: Optional[str] = None
-    v3_priv_passphrase: Optional[str] = None
-    v3_security_level: Optional[str] = None
-    is_active: Optional[bool] = None
+    name: str | None = None
+    version: str | None = None
+    community_string: str | None = None
+    v3_username: str | None = None
+    v3_auth_protocol: str | None = None
+    v3_auth_passphrase: str | None = None
+    v3_priv_protocol: str | None = None
+    v3_priv_passphrase: str | None = None
+    v3_security_level: str | None = None
+    is_active: bool | None = None
 
 
 class SNMPCredentialResponse(BaseModel):
@@ -45,13 +44,13 @@ class SNMPCredentialResponse(BaseModel):
     tenant_id: UUID
     name: str
     version: str
-    community_string: Optional[str] = None
-    v3_username: Optional[str] = None
-    v3_auth_protocol: Optional[str] = None
-    v3_auth_passphrase: Optional[str] = None
-    v3_priv_protocol: Optional[str] = None
-    v3_priv_passphrase: Optional[str] = None
-    v3_security_level: Optional[str] = None
+    community_string: str | None = None
+    v3_username: str | None = None
+    v3_auth_protocol: str | None = None
+    v3_auth_passphrase: str | None = None
+    v3_priv_protocol: str | None = None
+    v3_priv_passphrase: str | None = None
+    v3_security_level: str | None = None
     is_active: bool
     created_at: datetime
     updated_at: datetime

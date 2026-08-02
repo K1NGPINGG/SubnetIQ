@@ -1,27 +1,15 @@
 """System logs endpoint for viewing operational and background logs."""
 
-from typing import Optional, List
-from uuid import UUID
-
-from fastapi import APIRouter, Depends, Query, status
-from sqlalchemy import select, func
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.api.deps import get_current_active_user, validate_tenant_access
-from app.core.database import get_db
-from app.models.system_log import SystemLog
-from app.models.user import User
-
-router = APIRouter()
+from uuid import UUIDfrom fastapi import APIRouter, Depends, Queryfrom sqlalchemy import func, selectfrom sqlalchemy.ext.asyncio import AsyncSessionfrom app.api.deps import get_current_active_user, validate_tenant_accessfrom app.core.database import get_dbfrom app.models.system_log import SystemLogfrom app.models.user import Userrouter = APIRouter()
 
 
 @router.get("", summary="List system logs")
 async def list_system_logs(
-    level: Optional[str] = Query(None, description="Filter by level: info, warning, error, critical"),
-    category: Optional[str] = Query(None, description="Filter by category: api, task, system, discovery, auth"),
-    source: Optional[str] = Query(None, description="Filter by source"),
-    entity_type: Optional[str] = Query(None, description="Filter by entity type"),
-    search: Optional[str] = Query(None, description="Search in message"),
+    level: str | None = Query(None, description="Filter by level: info, warning, error, critical"),
+    category: str | None = Query(None, description="Filter by category: api, task, system, discovery, auth"),
+    source: str | None = Query(None, description="Filter by source"),
+    entity_type: str | None = Query(None, description="Filter by entity type"),
+    search: str | None = Query(None, description="Search in message"),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     db: AsyncSession = Depends(get_db),
@@ -74,7 +62,7 @@ async def list_system_logs(
     }
 
 
-@router.get("/levels", response_model=List[str], summary="Get available log levels")
+@router.get("/levels", response_model=list[str], summary="Get available log levels")
 async def get_log_levels(
     db: AsyncSession = Depends(get_db),
     tenant_id: UUID = Depends(validate_tenant_access),
@@ -88,7 +76,7 @@ async def get_log_levels(
     return [row[0] for row in result.all()]
 
 
-@router.get("/categories", response_model=List[str], summary="Get available log categories")
+@router.get("/categories", response_model=list[str], summary="Get available log categories")
 async def get_log_categories(
     db: AsyncSession = Depends(get_db),
     tenant_id: UUID = Depends(validate_tenant_access),
@@ -102,7 +90,7 @@ async def get_log_categories(
     return [row[0] for row in result.all()]
 
 
-@router.get("/sources", response_model=List[str], summary="Get available log sources")
+@router.get("/sources", response_model=list[str], summary="Get available log sources")
 async def get_log_sources(
     db: AsyncSession = Depends(get_db),
     tenant_id: UUID = Depends(validate_tenant_access),

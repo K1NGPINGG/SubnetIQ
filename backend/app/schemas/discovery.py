@@ -1,7 +1,7 @@
 """Discovery schemas."""
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -16,24 +16,26 @@ class DiscoveryScanBase(BaseModel):
 class DiscoveryScanCreate(DiscoveryScanBase):
     """Schema for creating a discovery scan."""
     is_scheduled: bool = False
-    schedule_time: Optional[datetime] = None
+    schedule_time: datetime | None = None
     is_recursive: bool = False
-    interval_minutes: Optional[int] = None
+    interval_minutes: int | None = None
 
 
 class DiscoveryScanResponse(DiscoveryScanBase):
-    """Schema for discovery scan response."""
+    """Schema for discovery scan response. ``subnet_id`` is nullable because
+    scans triggered via ``/discovery/run`` may target explicit IP lists."""
+    subnet_id: UUID | None = None
     id: UUID
     tenant_id: UUID
     status: str
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
-    results: Optional[Any] = None
-    error_message: Optional[str] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    results: Any | None = None
+    error_message: str | None = None
     is_scheduled: bool = False
-    schedule_time: Optional[datetime] = None
+    schedule_time: datetime | None = None
     is_recursive: bool = False
-    interval_minutes: Optional[int] = None
+    interval_minutes: int | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -46,20 +48,20 @@ class ScanResultsResponse(BaseModel):
     subnet_id: UUID
     scan_type: str
     status: str
-    completed_at: Optional[datetime] = None
-    results: Optional[Any] = None
+    completed_at: datetime | None = None
+    results: Any | None = None
 
 
 class DiscoveryRunRequest(BaseModel):
     """Request body for POST /discovery/run — unified asset discovery trigger."""
     scan_type: str  # "SNMP", "WINRM", "PING", "FULL"
-    target_ips: Optional[list[str]] = None  # Explicit IP list
-    subnet_id: Optional[UUID] = None  # Or scan an entire subnet
-    snmp_credential_id: Optional[UUID] = None
-    snmp_community: Optional[str] = "public"
-    winrm_credential_id: Optional[UUID] = None
-    winrm_username: Optional[str] = None
-    winrm_password: Optional[str] = None
+    target_ips: list[str] | None = None  # Explicit IP list
+    subnet_id: UUID | None = None  # Or scan an entire subnet
+    snmp_credential_id: UUID | None = None
+    snmp_community: str | None = "public"
+    winrm_credential_id: UUID | None = None
+    winrm_username: str | None = None
+    winrm_password: str | None = None
     winrm_port: int = 5985
     winrm_use_ssl: bool = False
 

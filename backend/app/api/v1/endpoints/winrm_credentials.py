@@ -1,26 +1,9 @@
 """WinRM Credential management endpoints."""
 
-from typing import List
-from uuid import UUID
-
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.api.deps import get_current_admin_user, validate_tenant_access
-from app.core.database import get_db
-from app.models.winrm_credential import WinRMCredential
-from app.models.user import User
-from app.schemas.winrm_credential import (
-    WinRMCredentialCreate,
-    WinRMCredentialUpdate,
-    WinRMCredentialResponse,
-)
-
-router = APIRouter()
+from uuid import UUIDfrom fastapi import APIRouter, Depends, HTTPException, statusfrom sqlalchemy import selectfrom sqlalchemy.ext.asyncio import AsyncSessionfrom app.api.deps import get_current_admin_user, validate_tenant_accessfrom app.core.database import get_dbfrom app.models.user import Userfrom app.models.winrm_credential import WinRMCredentialfrom app.schemas.winrm_credential import (    WinRMCredentialCreate,    WinRMCredentialResponse,    WinRMCredentialUpdate,)router = APIRouter()
 
 
-@router.get("", response_model=List[WinRMCredentialResponse])
+@router.get("", response_model=list[WinRMCredentialResponse])
 async def list_winrm_credentials(
     db: AsyncSession = Depends(get_db),
     tenant_id: UUID = Depends(validate_tenant_access),

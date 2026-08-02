@@ -19,6 +19,7 @@ import {
   useMfaEnable,
   useMfaDisable,
   useCurrentUser,
+  useUpdateProfile,
 } from "@/hooks/api";
 import apiClient from "@/shared/lib/api-client";
 
@@ -102,13 +103,52 @@ export default function ProfilePage() {
 function ProfileTab() {
   const dark = useThemeStore((s) => s.dark);
   const user = useAuthStore((s) => s.user);
+  const updateProfileStore = useAuthStore((s) => s.updateProfile);
+  const updateProfile = useUpdateProfile();
+  const [editing, setEditing] = useState(false);
+  const [success, setSuccess] = useState("");
+  const [error, setError] = useState("");
+  const [displayName, setDisplayName] = useState(user?.display_name ?? "");
+  const [email, setEmail] = useState(user?.email ?? "");
 
-  const infoItems = [
-    { label: "Display Name", value: user?.display_name },
-    { label: "Email", value: user?.email },
-    { label: "Role", value: user?.role === "admin" ? "Administrator" : "Read Only" },
-    { label: "Tenant ID", value: user?.tenant_id?.slice(0, 8) + "..." },
-  ];
+  const handleSave = async () => {
+    setError("");
+    setSuccess("");
+    if (!displayName.trim()) {
+      setError("Display name is required");
+      return;
+    }
+    if (!email.trim() || !email.includes("@")) {
+      setError("Valid email is required");
+      return;
+    }
+    try {
+      const updated = await updateProfile.mutateAsync({
+        display_name: displayName.trim(),
+        email: email.trim(),
+      });
+      updateProfileStore(updated);
+      setSuccess("Profile updated successfully");
+      setEditing(false);
+      setTimeout(() => setSuccess(""), 3000);
+    } catch (err: any) {
+      setError(err?.response?.data?.detail || "Failed to update profile");
+    }
+  };
+
+  const handleCancel = () => {
+    setDisplayName(user?.display_name ?? "");
+    setEmail(user?.email ?? "");
+    setEditing(false);
+    setError("");
+  };
+
+  const inputClass = `w-full rounded-md border px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
+    dark ? "border-gray-600 bg-gray-700 text-white" : "border-gray-300"
+  }`;
+  const labelClass = `mb-1 block text-sm font-medium ${
+    dark ? "text-gray-300" : "text-gray-700"
+  }`;
 
   return (
     <div
@@ -116,21 +156,105 @@ function ProfileTab() {
         dark ? "border-gray-700 bg-gray-800" : "border-gray-200 bg-white"
       }`}
     >
-      <h3 className={`mb-4 text-base font-semibold ${dark ? "text-white" : "text-gray-900"}`}>
-        Account Information
-      </h3>
-      <div className="space-y-4">
-        {infoItems.map((item) => (
-          <div key={item.label} className="flex items-center justify-between">
-            <span className={`text-sm ${dark ? "text-gray-400" : "text-gray-500"}`}>
-              {item.label}
-            </span>
-            <span className={`text-sm font-medium ${dark ? "text-white" : "text-gray-900"}`}>
-              {item.value}
-            </span>
-          </div>
-        ))}
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className={`text-base font-semibold ${dark ? "text-white" : "text-gray-900"}`}>
+          Account Information
+        </h3>
+        {!editing && (
+          <button
+            onClick={() => setEditing(true)}
+            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            Edit Profile
+          </button>
+        )}
       </div>
+
+      {success && (
+        <div className="mb-4 flex items-center gap-2 rounded-md bg-emerald-50 p-3 text-sm text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+          <CheckCircle className="h-4 w-4" />
+          {success}
+        </div>
+      )}
+
+      {error && (
+        <div className="mb-4 flex items-center gap-2 rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-400">
+          <AlertCircle className="h-4 w-4" />
+          {error}
+        </div>
+      )}
+
+      {editing ? (
+        <div className="space-y-4">
+          <div>
+            <label className={labelClass}>Display Name</label>
+            <input
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              className={inputClass}
+              placeholder="Your display name"
+            />
+          </div>
+          <div>
+            <label className={labelClass}>Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={inputClass}
+              placeholder="you@example.com"
+            />
+          </div>
+          <div>
+            <label className={labelClass}>Role</label>
+            <input
+              disabled
+              value={user?.role === "admin" ? "Administrator" : "Read Only"}
+              className={`${inputClass} opacity-60 cursor-not-allowed`}
+            />
+            <p className={`mt-1 text-xs ${dark ? "text-gray-500" : "text-gray-400"}`}>
+              Contact an administrator to change your role
+            </p>
+          </div>
+          <div className="flex gap-2 pt-2">
+            <button
+              onClick={handleSave}
+              disabled={updateProfile.isPending}
+              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            >
+              {updateProfile.isPending ? "Saving..." : "Save Changes"}
+            </button>
+            <button
+              onClick={handleCancel}
+              className={`rounded-md border px-4 py-2 text-sm font-medium ${
+                dark
+                  ? "border-gray-600 text-gray-300 hover:bg-gray-700"
+                  : "border-gray-300 text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {[
+            { label: "Display Name", value: user?.display_name },
+            { label: "Email", value: user?.email },
+            { label: "Role", value: user?.role === "admin" ? "Administrator" : "Read Only" },
+            { label: "Tenant ID", value: user?.tenant_id?.slice(0, 8) + "..." },
+          ].map((item) => (
+            <div key={item.label} className="flex items-center justify-between">
+              <span className={`text-sm ${dark ? "text-gray-400" : "text-gray-500"}`}>
+                {item.label}
+              </span>
+              <span className={`text-sm font-medium ${dark ? "text-white" : "text-gray-900"}`}>
+                {item.value}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -157,11 +281,10 @@ function PasswordTab() {
     setError("");
     setSuccess(false);
     try {
-      const params = new URLSearchParams({
+      await apiClient.post(`/auth/change-password`, {
         current_password: data.current_password,
         new_password: data.new_password,
       });
-      await apiClient.post(`/auth/change-password?${params.toString()}`);
       setSuccess(true);
       reset();
       setTimeout(() => setSuccess(false), 5000);
@@ -291,6 +414,7 @@ function MFATab({
   const dark = useThemeStore((s) => s.dark);
   const [setupData, setSetupData] = useState<any>(null);
   const [verifyCode, setVerifyCode] = useState("");
+  const [disableCode, setDisableCode] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -323,13 +447,15 @@ function MFATab({
   };
 
   const handleDisable = async () => {
+    if (!disableCode) return;
     setError("");
     setSuccess("");
     try {
-      await mfaDisable.mutateAsync();
+      await mfaDisable.mutateAsync({ code: disableCode });
       setSuccess("MFA disabled successfully.");
+      setDisableCode("");
     } catch {
-      setError("Failed to disable MFA.");
+      setError("Failed to disable MFA. Check your code and try again.");
     }
   };
 
@@ -455,17 +581,33 @@ function MFATab({
             </button>
           ) : (
             !mfaEnforced && (
-              <button
-                onClick={handleDisable}
-                disabled={mfaDisable.isPending}
-                className={`rounded-md border px-4 py-2 text-sm font-medium ${
-                  dark
-                    ? "border-gray-600 text-gray-300 hover:bg-gray-700"
-                    : "border-gray-300 text-gray-700 hover:bg-gray-50"
-                } disabled:opacity-50`}
-              >
-                {mfaDisable.isPending ? "Disabling..." : "Disable MFA"}
-              </button>
+              <div className="space-y-2">
+                <p className={`text-sm ${dark ? "text-gray-400" : "text-gray-500"}`}>
+                  Enter your TOTP code to disable MFA:
+                </p>
+                <div className="flex gap-2">
+                  <input
+                    value={disableCode}
+                    onChange={(e) => setDisableCode(e.target.value)}
+                    placeholder="000000"
+                    maxLength={6}
+                    className={`w-32 rounded-md border px-3 py-2 text-sm font-mono focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
+                      dark ? "border-gray-600 bg-gray-700 text-white" : "border-gray-300"
+                    }`}
+                  />
+                  <button
+                    onClick={handleDisable}
+                    disabled={disableCode.length !== 6 || mfaDisable.isPending}
+                    className={`rounded-md border px-4 py-2 text-sm font-medium ${
+                      dark
+                        ? "border-gray-600 text-gray-300 hover:bg-gray-700"
+                        : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                    } disabled:opacity-50`}
+                  >
+                    {mfaDisable.isPending ? "Disabling..." : "Disable MFA"}
+                  </button>
+                </div>
+              </div>
             )
           )}
         </div>
