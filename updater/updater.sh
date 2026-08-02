@@ -4,6 +4,7 @@
 # and the stack directory (mounted at the same path as on the host).
 
 set -e
+umask 022
 
 STACK="${UPDATE_STACK_DIR:-/home/ipam/GG_IPAM}"
 REMOTE="${UPDATE_REMOTE:-https://github.com/K1NGPINGG/SubnetIQ.git}"
@@ -14,10 +15,12 @@ chmod 777 "$UPDATES"
 
 log() {
   echo "[updater] $(date -u +%Y-%m-%dT%H:%M:%SZ) $*" >> "$UPDATES/update.log"
+  chmod 644 "$UPDATES/update.log"
 }
 
 set_state() {
   echo "$1" > "$UPDATES/state.json"
+  chmod 644 "$UPDATES/state.json"
 }
 
 run_update() {
