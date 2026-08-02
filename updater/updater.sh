@@ -43,8 +43,8 @@ run_update() {
   git fetch --tags --force origin || { log "git fetch failed"; return 1; }
   git checkout --force "$TAG" || { log "git checkout $TAG failed"; return 1; }
 
-  docker compose build frontend backend || { log "docker compose build failed"; return 1; }
-  docker compose up -d --no-deps --force-recreate frontend backend celery-worker || { log "docker compose up failed"; return 1; }
+  docker compose build subnetiq-app backend || { log "docker compose build failed"; return 1; }
+  docker compose up -d --no-deps --force-recreate subnetiq-app backend celery-worker || { log "docker compose up failed"; return 1; }
 
   log "update to $TAG succeeded"
   set_state "{\"status\":\"success\",\"tag\":\"$TAG\",\"finished_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}"

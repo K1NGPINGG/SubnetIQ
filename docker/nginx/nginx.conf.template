@@ -1,0 +1,52 @@
+# SubnetIQ bundled Nginx - optional reverse proxy with HTTPS termination.
+# Rendered from this template by docker/nginx/entrypoint.sh at container start.
+# Substituted values (see docker-compose.yml / .env):
+#   $APP_SERVICE       - upstream app service name (default: subnetiq-app)
+#   $APP_SERVICE_PORT  - upstream app internal port (default: 80)
+#   $APP_DOMAIN        - public domain / server name (default: localhost)
+#   $SSL_CERT_PATH     - resolved by docker/nginx/ssl-setup.sh
+#   $SSL_KEY_PATH      - resolved by docker/nginx/ssl-setup.sh
+# Nginx runtime variables ($host, $request_uri, $scheme, ...) are left as-is.
+
+# HTTP - ACME validation (Let's Encrypt HTTP-01) + redirect to HTTPS
+server {
+    listen 80;
+    server_name ${APP_DOMAIN} _;
+
+    # Let's Encrypt HTTP-01 challenge (SSL_MODE=letsencrypt)
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# HTTPS - reverse proxy to the SubnetIQ app
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name ${APP_DOMAIN} _;
+
+    ssl_certificate     ${SSL_CERT_PATH};
+    ssl_certificate_key ${SSL_KEY_PATH};
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_session_cache   shared:SSL:10m;
+    ssl_session_timeout 1d;
+
+    # Keep long-lived connections for SPA + streaming responses
+    keepalive_timeout 65;
+
+    location / {
+        proxy_pass http://${APP_SERVICE}:${APP_SERVICE_PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade           $http_upgrade;
+        proxy_set_header Connection        "upgrade";
+        proxy_redirect off;
+    }
+}

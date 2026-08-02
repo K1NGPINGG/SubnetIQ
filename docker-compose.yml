@@ -50,7 +50,7 @@ services:
       - ./backend:/app
       - tenant_logos:/app/static/tenants
       - ./.updates:/updates
-    # No exposed port — frontend nginx proxies to it
+    # No exposed port on the host - the subnetiq-app nginx proxies to it.
     depends_on:
       postgres:
         condition: service_healthy
@@ -82,15 +82,75 @@ services:
     entrypoint: ["celery"]
     command: ["-A", "app.tasks.worker", "worker", "--loglevel=info"]
 
-  frontend:
+  # Main application (standalone by default).
+  # Serves the SPA and proxies /api to the backend. It is exposed directly on
+  # the host so it can be reached standalone or behind an existing reverse proxy
+  # (NPM, Traefik, Caddy, ...). See README -> Deployment Options.
+  subnetiq-app:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: subnetiq_frontend
+    container_name: subnetiq_app
+    restart: unless-stopped
     ports:
-      - "3000:80"
+      - "${APP_PORT:-3000}:80"
     depends_on:
       - backend
+
+  # Optional bundled reverse proxy with HTTPS. Started explicitly with:
+  #   docker compose --profile with-proxy up -d
+  # SSL behaviour is controlled by SSL_MODE (selfsigned | letsencrypt | custom).
+  nginx:
+    build:
+      context: ./docker/nginx
+      dockerfile: Dockerfile
+    container_name: subnetiq_nginx
+    profiles: ["with-proxy"]
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      APP_SERVICE: ${APP_SERVICE:-subnetiq-app}
+      APP_SERVICE_PORT: ${APP_SERVICE_PORT:-80}
+      APP_DOMAIN: ${APP_DOMAIN:-localhost}
+      SSL_MODE: ${SSL_MODE:-selfsigned}
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:-}
+    volumes:
+      # Nginx configuration (template rendered at container start)
+      - ./docker/nginx/nginx.conf.template:/etc/nginx/nginx.conf.template:ro
+      - ./docker/nginx/entrypoint.sh:/entrypoint.sh:ro
+      - ./docker/nginx/ssl-setup.sh:/ssl-setup.sh:ro
+      # Certificates directory. Structure:
+      #   ./certs/selfsigned/           - auto-generated (Mode A)
+      #   ./certs/custom/fullchain.pem  - user-provided (Mode C, mount here)
+      #   ./certs/letsencrypt-bootstrap/ - bootstrap until real cert issued (Mode B)
+      - ./certs:/etc/nginx/certs
+      # Let's Encrypt state (Mode B) - also read by Nginx for the live cert
+      - ./certbot/conf:/etc/letsencrypt
+      # ACME HTTP-01 challenge webroot
+      - ./certbot/www:/var/www/certbot
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    depends_on:
+      - subnetiq-app
+
+  # Optional Let's Encrypt client (SSL_MODE=letsencrypt, with-proxy profile).
+  # Obtains the certificate on first start and renews it automatically.
+  certbot:
+    image: certbot/certbot
+    container_name: subnetiq_certbot
+    profiles: ["with-proxy"]
+    restart: unless-stopped
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+      - ./docker/nginx/certbot-entrypoint.sh:/certbot-entrypoint.sh:ro
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:-localhost}
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:-}
+    entrypoint: ["/bin/sh", "/certbot-entrypoint.sh"]
+    depends_on:
+      - nginx
 
   updater:
     image: docker:git

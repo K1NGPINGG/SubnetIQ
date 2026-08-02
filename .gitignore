@@ -1,6 +1,7 @@
 # Environment secrets
 .env
 .env.*
+!.env.example
 
 # Python
 __pycache__/
@@ -38,3 +39,7 @@ scripts/
 
 # Update runtime state
 .updates/
+
+# Runtime SSL certificates & Let's Encrypt state
+certs/
+certbot/
