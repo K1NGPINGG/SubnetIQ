@@ -1,5 +1,5 @@
 import { useThemeStore } from "@/shared/lib/theme-store";
-import { Network, Shield, Globe, Radar, Box, Monitor } from "lucide-react";
+import { Network, Shield, Globe, Radar, Box, Monitor, Table } from "lucide-react";
 
 const features = [
   {
@@ -31,6 +31,11 @@ const features = [
     icon: Monitor,
     title: "WinRM Remote Management",
     description: "Windows host management via PowerShell Remoting. Collects detailed hardware and OS information from Windows servers and workstations.",
+  },
+  {
+    icon: Table,
+    title: "IPAM Records",
+    description: "A unified view of every IP across all subnets. Search, filter, edit single records, bulk-edit many at once, and export the results to CSV or PDF.",
   },
 ];
 
@@ -111,7 +116,7 @@ export default function AboutPage() {
       <div className={`rounded-lg border p-4 ${dark ? "border-gray-700 bg-gray-800" : "border-gray-200 bg-white"}`}>
         <h2 className={`text-lg font-semibold mb-2 ${dark ? "text-white" : "text-gray-900"}`}>Version</h2>
         <p className={`text-sm ${dark ? "text-gray-400" : "text-gray-600"}`}>
-          SubnetIQ v1.0.0 &mdash; Built with modern open-source technologies.
+          SubnetIQ v1.0.3 &mdash; Built with modern open-source technologies.
         </p>
       </div>
     </div>

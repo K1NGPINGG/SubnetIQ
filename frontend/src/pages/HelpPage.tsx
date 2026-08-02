@@ -72,6 +72,9 @@ export default function HelpPage() {
       <Section title="What's New" defaultOpen>
         <div className="space-y-3">
           <ul className="list-disc list-inside space-y-1 ml-2">
+            <li><strong>IPAM Records</strong> &mdash; A unified, searchable view of every IP across all subnets with per-record editing, bulk editing, and CSV/PDF export.</li>
+            <li><strong>Live scan status</strong> &mdash; Discovery scan progress now updates automatically while a scan runs &mdash; no manual refresh needed.</li>
+            <li><strong>Admin updates</strong> &mdash; Check for new SubnetIQ releases and update the stack from the Admin area.</li>
             <li><strong>Address hierarchy</strong> &mdash; VRFs, RIRs, Aggregates, IP Ranges, and ASNs for structured IPAM.</li>
             <li><strong>Metadata</strong> &mdash; Tags, Custom Fields, and Validation Rules on subnets, IPs, and sites.</li>
             <li><strong>Approval workflow</strong> &mdash; Request/approve/reject IP releases for privileged control.</li>
@@ -91,10 +94,24 @@ export default function HelpPage() {
           <p><strong>2. Add VLANs</strong> &mdash; Define your VLANs under the VLANs page, optionally linking them to sites.</p>
           <p><strong>3. Create Subnets</strong> &mdash; Add your IP subnets under Subnets. Assign them to sites and VLANs for organization.</p>
           <p><strong>4. Add IP Addresses</strong> &mdash; Manually add IPs or use Discovery to auto-scan a subnet.</p>
-          <p><strong>5. Run Discovery</strong> &mdash; Navigate to Discovery, select a subnet and scan type (Ping, SNMP, ARP, or Full) to discover live hosts.</p>
-          <p><strong>6. Monitor Dashboard</strong> &mdash; The Dashboard shows utilization metrics, charts, and the global site map.</p>
-          <p><strong>7. Model your hierarchy</strong> &mdash; Use VRFs, RIRs, Aggregates, IP Ranges, and ASNs to structure address space at scale.</p>
-          <p><strong>8. Enrich with metadata</strong> &mdash; Apply Tags and Custom Fields to subnets, IPs, and sites; enforce Validation Rules on IP creation.</p>
+          <p><strong>5. Use IPAM Records</strong> &mdash; The IPAM Records page gives you a single searchable, filterable view of every IP across all subnets &mdash; edit records, bulk-edit selections, and export to CSV or PDF.</p>
+          <p><strong>6. Run Discovery</strong> &mdash; Navigate to Discovery, select a subnet and scan type (Ping, SNMP, ARP, or Full) to discover live hosts.</p>
+          <p><strong>7. Monitor Dashboard</strong> &mdash; The Dashboard shows utilization metrics, charts, and the global site map.</p>
+          <p><strong>8. Model your hierarchy</strong> &mdash; Use VRFs, RIRs, Aggregates, IP Ranges, and ASNs to structure address space at scale.</p>
+          <p><strong>9. Enrich with metadata</strong> &mdash; Apply Tags and Custom Fields to subnets, IPs, and sites; enforce Validation Rules on IP creation.</p>
+        </div>
+      </Section>
+
+      <Section title="IPAM Records">
+        <div className="space-y-3">
+          <p>The <strong>IPAM Records</strong> page is a cross-subnet view of every IP in the system, built for day-to-day IPAM work.</p>
+          <ul className="list-disc list-inside space-y-1 ml-2">
+            <li><strong>View &amp; filter</strong> &mdash; Search by address, hostname, MAC, or device type, and filter by status. Each row shows the IP, subnet CIDR, VRF, hostname, MAC, device type, assigned-to, color-coded status, tags, and custom fields.</li>
+            <li><strong>Edit a record</strong> &mdash; Click Edit to update status, hostname, device type, MAC, assigned-to, subnet/VRF assignment, description, tags, and custom fields. The IP address itself is read-only (release and re-allocate to change it).</li>
+            <li><strong>Bulk edit</strong> &mdash; Select records with the checkboxes and apply a new status, device type, or assigned-to to all of them at once. Manage tags across the selection with <strong>Add</strong>, <strong>Replace</strong>, or <strong>Remove</strong> modes.</li>
+            <li><strong>Export</strong> &mdash; Download the current view as <strong>CSV</strong> (for Excel/Numbers) or a formatted <strong>PDF</strong> report.</li>
+          </ul>
+          <p>Backed by <code>GET /api/v1/ips/records</code>.</p>
         </div>
       </Section>
 
@@ -168,7 +185,7 @@ export default function HelpPage() {
             <li><strong>Ping + SNMP</strong> &mdash; Combines ICMP ping with SNMP polling for maximum coverage.</li>
             <li><strong>Full</strong> &mdash; Runs Ping, ARP, DNS, and SNMP together.</li>
           </ul>
-          <p>Scans can be scheduled to run recursively at custom intervals.</p>
+          <p>Scans can be scheduled to run recursively at custom intervals. Scan status updates automatically while a scan is running, so you always see live progress without refreshing the page.</p>
         </div>
       </Section>
 
@@ -235,6 +252,7 @@ POST /api/v1/auth/login         # Include "mfa_code" when enabled`}</CodeBlock>
 
           <h4 className={`font-semibold text-xs mt-4 mb-2 ${dark ? "text-gray-400" : "text-gray-500"}`}>IP ADDRESSES</h4>
           <ApiEndpoint method="GET" path="/api/v1/ips/" desc="List IPs with filters for subnet, status, search" />
+          <ApiEndpoint method="GET" path="/api/v1/ips/records" desc="List all IP records across subnets (enriched with subnet CIDR and VRF name)" />
           <ApiEndpoint method="POST" path="/api/v1/ips/" desc="Create or allocate an IP address" />
           <ApiEndpoint method="POST" path="/api/v1/ips/allocate" desc="Allocate the next free IP in a subnet" />
           <ApiEndpoint method="POST" path="/api/v1/ips/bulk" desc="Bulk-create many IPs at once" />
