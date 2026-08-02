@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MapContainer, TileLayer, Marker, Tooltip, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -65,6 +65,14 @@ function FitBounds({ locations }: { locations: MapLocation[] }) {
   return null;
 }
 
+function ResizeHandler({ height }: { height: number }) {
+  const map = useMap();
+  useEffect(() => {
+    map.invalidateSize();
+  }, [height, map]);
+  return null;
+}
+
 function SiteMarker({
   location,
   dark,
@@ -77,7 +85,7 @@ function SiteMarker({
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const tooltipHtml = `
-    <div style="padding:10px;min-width:220px;max-width:320px;background:${dark ? "#1f2937" : "#ffffff"};color:${dark ? "#e5e7eb" : "#111827"};border-radius:8px;border:1px solid ${dark ? "#374151" : "#e5e7eb"};box-shadow:0 4px 16px rgba(0,0,0,${dark ? "0.5" : "0.15"})">
+    <div style="padding:10px;min-width:220px;max-width:320px;max-height:280px;overflow-y:auto;background:${dark ? "#1f2937" : "#ffffff"};color:${dark ? "#e5e7eb" : "#111827"};border-radius:8px;border:1px solid ${dark ? "#374151" : "#e5e7eb"};box-shadow:0 4px 16px rgba(0,0,0,${dark ? "0.5" : "0.15"})">
       <div style="font-weight:700;font-size:13px;margin-bottom:8px;color:${dark ? "#f3f4f6" : "#111827"}">${escapeHtml(location.site_name)}</div>
       ${location.networks.length === 0
         ? `<div style="font-size:12px;color:${dark ? "#9ca3af" : "#6b7280"}">No subnets configured</div>`
@@ -118,6 +126,29 @@ export default function MapView() {
   const { data: locations = [], isLoading } = useMapData();
   const icon = createPulseIcon(dark);
 
+  const [mapHeight, setMapHeight] = useState(350);
+  const resizeRef = useRef<{ startY: number; startHeight: number } | null>(null);
+
+  const onResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    resizeRef.current = { startY: e.clientY, startHeight: mapHeight };
+
+    const onMove = (ev: MouseEvent) => {
+      if (!resizeRef.current) return;
+      const delta = ev.clientY - resizeRef.current.startY;
+      const next = Math.min(600, Math.max(200, resizeRef.current.startHeight + delta));
+      setMapHeight(next);
+    };
+    const onUp = () => {
+      resizeRef.current = null;
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  };
+
   if (isLoading) {
     return (
       <div
@@ -143,6 +174,17 @@ export default function MapView() {
           box-shadow: none !important;
           padding: 0 !important;
         }
+        .map-tooltip .leaflet-tooltip-content > div {
+          max-height: 280px;
+          overflow-y: auto;
+        }
+        .map-tooltip .leaflet-tooltip-content > div::-webkit-scrollbar {
+          width: 6px;
+        }
+        .map-tooltip .leaflet-tooltip-content > div::-webkit-scrollbar-thumb {
+          background: ${dark ? "#4b5563" : "#d1d5db"};
+          border-radius: 3px;
+        }
         .map-tooltip .leaflet-tooltip-tip {
           display: none !important;
         }
@@ -152,21 +194,51 @@ export default function MapView() {
         .map-tooltip-light .leaflet-tooltip-content {
           color: #111827 !important;
         }
+        .map-resize-handle {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 10px;
+          cursor: ns-resize;
+          user-select: none;
+          touch-action: none;
+        }
+        .map-resize-handle .map-resize-grip {
+          width: 36px;
+          height: 4px;
+          border-radius: 9999px;
+          background: ${dark ? "#4b5563" : "#d1d5db"};
+          transition: background 0.15s;
+        }
+        .map-resize-handle:hover .map-resize-grip {
+          background: #3b82f6;
+        }
       `}</style>
       <MapContainer
         center={[20, 0]}
         zoom={2}
-        style={{ height: "350px", width: "100%" }}
+        style={{ height: `${mapHeight}px`, width: "100%" }}
         zoomControl={true}
         scrollWheelZoom={true}
         attributionControl={false}
       >
         <TileSwitcher dark={dark} />
         <FitBounds locations={locations} />
+        <ResizeHandler height={mapHeight} />
         {locations.map((loc) => (
           <SiteMarker key={loc.site_id} location={loc} dark={dark} icon={icon} />
         ))}
       </MapContainer>
+      <div
+        className="map-resize-handle"
+        onMouseDown={onResizeStart}
+        role="separator"
+        aria-orientation="horizontal"
+        aria-label="Resize map"
+        title="Drag to resize map"
+      >
+        <div className="map-resize-grip" />
+      </div>
     </div>
   );
 }
