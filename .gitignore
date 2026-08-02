@@ -16,6 +16,7 @@ build/
 node_modules/
 frontend-src/node_modules/
 frontend/node_modules/
+*.tsbuildinfo
 
 # IDE
 .vscode/

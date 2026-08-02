@@ -21,6 +21,12 @@ A modern IP Address Management (IPAM) platform built with FastAPI, React, Postgr
 - **Audit Logging** — full audit trail of all changes
 - **Dark Mode** — built-in light/dark theme support
 
+## Documentation
+
+- **[Onboarding Guide](docs/ONBOARDING.md)** — step-by-step walkthrough of every feature, from first login to day-to-day IPAM operations.
+- **[Changelog](CHANGELOG.md)** — a history of all changes by release.
+- **In-app Help** — the "Help & Documentation" page inside SubnetIQ covers every page and the full REST API reference.
+
 ## Tech Stack
 
 | Layer | Technology |

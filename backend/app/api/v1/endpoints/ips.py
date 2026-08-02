@@ -26,6 +26,7 @@ from app.core.validation import (
 from app.models.ip_address import IPAddress
 from app.models.subnet import Subnet
 from app.models.user import User
+from app.models.vrf import VRF
 from app.schemas.ip_address import (
     IPAddressBulkCreateRequest,
     IPAddressCreate,
@@ -36,6 +37,57 @@ from app.schemas.ip_address import (
 )
 
 router = APIRouter()
+
+
+@router.get("/records", response_model=list[IPAddressResponse], summary="List all IP records with tags, custom fields, and VRF")
+async def list_ip_records(
+    subnet_id: UUID | None = Query(None, description="Filter by subnet"),
+    vrf_id: UUID | None = Query(None, description="Filter by VRF"),
+    status: str | None = Query(None, description="Filter by status"),
+    search: str | None = Query(None, description="Search by address, hostname, or description"),
+    db: AsyncSession = Depends(get_db),
+    tenant_id: UUID = Depends(validate_tenant_access),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Return all IP address records for the current tenant (no pagination),
+    enriched with subnet and VRF names for use in the IPAM Records list and exports."""
+    query = (
+        select(IPAddress, Subnet, VRF)
+        .join(Subnet, Subnet.id == IPAddress.subnet_id)
+        .outerjoin(VRF, VRF.id == IPAddress.vrf_id)
+        .where(IPAddress.tenant_id == tenant_id)
+    )
+
+    if subnet_id:
+        query = query.where(IPAddress.subnet_id == subnet_id)
+    if vrf_id:
+        query = query.where(IPAddress.vrf_id == vrf_id)
+    if status:
+        query = query.where(IPAddress.status == status)
+    if search:
+        pattern = f"%{search}%"
+        query = query.where(
+            (IPAddress.address.ilike(pattern))
+            | (IPAddress.hostname.ilike(pattern))
+            | (IPAddress.description.ilike(pattern))
+        )
+
+    query = query.order_by(IPAddress.address)
+
+    result = await db.execute(query)
+    rows = result.all()
+
+    records: list[dict] = []
+    for ip, subnet, vrf in rows:
+        record = IPAddressResponse.model_validate(ip).model_dump()
+        record["subnet_name"] = subnet.name if subnet else None
+        record["subnet_cidr"] = (
+            f"{subnet.network_address}/{subnet.prefix_length}" if subnet else None
+        )
+        record["vrf_name"] = vrf.name if vrf else None
+        records.append(record)
+
+    return records
 
 
 @router.get("", response_model=list[IPAddressResponse], summary="List IP addresses")

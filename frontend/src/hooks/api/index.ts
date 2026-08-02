@@ -390,6 +390,14 @@ export function useIpAddresses() {
   });
 }
 
+export function useIpamRecords() {
+  return useQuery({
+    queryKey: [...ipKeys.all, "records"],
+    queryFn: () =>
+      apiClient.get<IPAddress[]>("/ips/records").then((res) => res.data),
+  });
+}
+
 export function useIpAddress(id: string) {
   return useQuery({
     queryKey: ipKeys.detail(id),
@@ -469,6 +477,13 @@ export function useDiscoveryScans() {
     queryKey: discoveryKeys.list(),
     queryFn: () =>
       apiClient.get<DiscoveryScan[]>("/discovery").then((res) => res.data),
+    refetchInterval: (query) => {
+      const scans = query.state.data;
+      const active = (scans ?? []).some((s) =>
+        ["pending", "running", "scheduled"].includes(s.status)
+      );
+      return active ? 5000 : false;
+    },
   });
 }
 

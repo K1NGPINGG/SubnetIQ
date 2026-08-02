@@ -206,6 +206,13 @@ export interface IPAddress {
   assigned_to: string | null;
   allocated_at: string | null;
   expires_at: string | null;
+  vrf_id: string | null;
+  family: number;
+  tags: string[] | null;
+  custom_fields: Record<string, unknown> | null;
+  subnet_name?: string | null;
+  subnet_cidr?: string | null;
+  vrf_name?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -229,7 +236,10 @@ export interface IPAddressUpdate {
   description?: string;
   assigned_to?: string;
   subnet_id?: string;
+  vrf_id?: string;
   expires_at?: string;
+  tags?: string[];
+  custom_fields?: Record<string, unknown>;
 }
 
 export interface IPAllocationRequest {
