@@ -3,7 +3,7 @@
 import asyncio
 from logging.config import fileConfig
 
-from sqlalchemy import pool
+from sqlalchemy import pool, text
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
@@ -53,8 +53,32 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
+def ensure_version_table(connection: Connection) -> None:
+    """Ensure the Alembic version table can hold long revision ids.
+
+    Alembic creates ``alembic_version.version_num`` as ``VARCHAR(32)`` by
+    default, but several revision ids in this project exceed 32 characters
+    (e.g. ``005_discovery_scan_subnet_nullable``). Without a wider column a
+    fresh ``alembic upgrade head`` fails with a StringDataRightTruncationError.
+    """
+    connection.execute(
+        text(
+            "CREATE TABLE IF NOT EXISTS alembic_version "
+            "(version_num VARCHAR(64) NOT NULL PRIMARY KEY)"
+        )
+    )
+    connection.execute(
+        text(
+            "ALTER TABLE alembic_version "
+            "ALTER COLUMN version_num TYPE VARCHAR(64)"
+        )
+    )
+    connection.commit()
+
+
 def do_run_migrations(connection: Connection) -> None:
     """Run migrations with the given connection."""
+    ensure_version_table(connection)
     context.configure(connection=connection, target_metadata=target_metadata)
 
     with context.begin_transaction():
