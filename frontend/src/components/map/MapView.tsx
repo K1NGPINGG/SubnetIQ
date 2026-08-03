@@ -127,26 +127,28 @@ export default function MapView() {
   const icon = createPulseIcon(dark);
 
   const [mapHeight, setMapHeight] = useState(350);
-  const resizeRef = useRef<{ startY: number; startHeight: number } | null>(null);
 
-  const onResizeStart = (e: React.MouseEvent) => {
+  const onResizeStart = (e: React.PointerEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    resizeRef.current = { startY: e.clientY, startHeight: mapHeight };
+    const startY = e.clientY;
+    const startHeight = mapHeight;
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      /* some browsers throw if the pointer is no longer active */
+    }
 
-    const onMove = (ev: MouseEvent) => {
-      if (!resizeRef.current) return;
-      const delta = ev.clientY - resizeRef.current.startY;
-      const next = Math.min(600, Math.max(200, resizeRef.current.startHeight + delta));
+    const onMove = (ev: PointerEvent) => {
+      const next = Math.min(600, Math.max(200, startHeight + (ev.clientY - startY)));
       setMapHeight(next);
     };
     const onUp = () => {
-      resizeRef.current = null;
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
     };
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
   };
 
   if (isLoading) {
@@ -214,24 +216,26 @@ export default function MapView() {
           background: #3b82f6;
         }
       `}</style>
-      <MapContainer
-        center={[20, 0]}
-        zoom={2}
-        style={{ height: `${mapHeight}px`, width: "100%" }}
-        zoomControl={true}
-        scrollWheelZoom={true}
-        attributionControl={false}
-      >
-        <TileSwitcher dark={dark} />
-        <FitBounds locations={locations} />
-        <ResizeHandler height={mapHeight} />
-        {locations.map((loc) => (
-          <SiteMarker key={loc.site_id} location={loc} dark={dark} icon={icon} />
-        ))}
-      </MapContainer>
+      <div style={{ height: `${mapHeight}px` }}>
+        <MapContainer
+          center={[20, 0]}
+          zoom={2}
+          style={{ height: "100%", width: "100%" }}
+          zoomControl={true}
+          scrollWheelZoom={true}
+          attributionControl={false}
+        >
+          <TileSwitcher dark={dark} />
+          <FitBounds locations={locations} />
+          <ResizeHandler height={mapHeight} />
+          {locations.map((loc) => (
+            <SiteMarker key={loc.site_id} location={loc} dark={dark} icon={icon} />
+          ))}
+        </MapContainer>
+      </div>
       <div
         className="map-resize-handle"
-        onMouseDown={onResizeStart}
+        onPointerDown={onResizeStart}
         role="separator"
         aria-orientation="horizontal"
         aria-label="Resize map"
