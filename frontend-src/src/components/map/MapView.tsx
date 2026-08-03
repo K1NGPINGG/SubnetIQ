@@ -65,10 +65,14 @@ function FitBounds({ locations }: { locations: MapLocation[] }) {
   return null;
 }
 
-function ResizeHandler({ height }: { height: number }) {
+function MapHeightControl({ height }: { height: number }) {
   const map = useMap();
   useEffect(() => {
-    map.invalidateSize();
+    // react-leaflet v5 captures the MapContainer `style` prop on mount and never
+    // updates it, so resize by mutating the container's height directly.
+    const el = map.getContainer();
+    el.style.height = `${height}px`;
+    map.invalidateSize({ animate: false });
   }, [height, map]);
   return null;
 }
@@ -82,7 +86,18 @@ function SiteMarker({
   dark: boolean;
   icon: L.DivIcon;
 }) {
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tooltipRef = useRef<HTMLDivElement | null>(null);
+
+  // Keep the map from zooming while the user scrolls inside the tooltip.
+  // The native listener runs before the event reaches Leaflet's wheel handler
+  // on the map container.
+  useEffect(() => {
+    const el = tooltipRef.current;
+    if (!el) return;
+    const stopWheel = (e: WheelEvent) => e.stopPropagation();
+    el.addEventListener("wheel", stopWheel, { passive: false });
+    return () => el.removeEventListener("wheel", stopWheel);
+  }, []);
 
   const tooltipHtml = `
     <div style="padding:10px;min-width:220px;max-width:320px;max-height:280px;overflow-y:auto;background:${dark ? "#1f2937" : "#ffffff"};color:${dark ? "#e5e7eb" : "#111827"};border-radius:8px;border:1px solid ${dark ? "#374151" : "#e5e7eb"};box-shadow:0 4px 16px rgba(0,0,0,${dark ? "0.5" : "0.15"})">
@@ -113,9 +128,10 @@ function SiteMarker({
         offset={[0, -10]}
         opacity={1}
         permanent={false}
+        interactive
         className={`map-tooltip ${dark ? "map-tooltip-dark" : "map-tooltip-light"}`}
       >
-        <div dangerouslySetInnerHTML={{ __html: tooltipHtml }} />
+        <div ref={tooltipRef} dangerouslySetInnerHTML={{ __html: tooltipHtml }} />
       </Tooltip>
     </Marker>
   );
@@ -216,23 +232,21 @@ export default function MapView() {
           background: #3b82f6;
         }
       `}</style>
-      <div style={{ height: `${mapHeight}px` }}>
-        <MapContainer
-          center={[20, 0]}
-          zoom={2}
-          style={{ height: "100%", width: "100%" }}
-          zoomControl={true}
-          scrollWheelZoom={true}
-          attributionControl={false}
-        >
-          <TileSwitcher dark={dark} />
-          <FitBounds locations={locations} />
-          <ResizeHandler height={mapHeight} />
-          {locations.map((loc) => (
-            <SiteMarker key={loc.site_id} location={loc} dark={dark} icon={icon} />
-          ))}
-        </MapContainer>
-      </div>
+      <MapContainer
+        center={[20, 0]}
+        zoom={2}
+        style={{ height: "350px", width: "100%" }}
+        zoomControl={true}
+        scrollWheelZoom={true}
+        attributionControl={false}
+      >
+        <TileSwitcher dark={dark} />
+        <FitBounds locations={locations} />
+        <MapHeightControl height={mapHeight} />
+        {locations.map((loc) => (
+          <SiteMarker key={loc.site_id} location={loc} dark={dark} icon={icon} />
+        ))}
+      </MapContainer>
       <div
         className="map-resize-handle"
         onPointerDown={onResizeStart}
