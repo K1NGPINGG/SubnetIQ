@@ -5,6 +5,33 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026
+
+### Added
+
+- **Virtual IP (VIP) inventory tracking** — IP addresses can be marked as VIPs
+  (`is_vip`) with a `vip_type` (keepalived, carp_vrrp, load_balancer, kubernetes,
+  floating_cloud) and linked 1:N to their backing node IPs via a new
+  `vip_node_bindings` association (roles: primary/backup/active/standby).
+- **VIP UI** — a VIP badge and type/bound-nodes columns in the IP table, a
+  `[ All IPs | Static IPs | VIPs Only ]` filter, and a VIP editor in the IP modal
+  (toggle + type dropdown + dynamic node assignment).
+- **Update progress bar** — the in-app updater reports progress (0-100) and a
+  step label so stack updates can be tracked live.
+- **Manual update check** — a "Check for updates" button forces a fresh GitHub
+  release check; automatic checks are now cached for 6 hours (twice per 12h)
+  instead of hitting the GitHub API on every status poll.
+- **Resizable dashboard map** — drag the map handle to resize (200-600px), with
+  scrollable site tooltips that no longer disappear on hover or zoom the map.
+
+### Fixed
+
+- Dashboard map markers no longer disappear after resizing (react-leaflet v5
+  captures the `style` prop once — height is now applied via the Leaflet
+  container directly).
+- `APP_VERSION` no longer goes stale in `.env` (the code default is authoritative),
+  so the Updates page reports the correct current version.
+
 ## [1.1.0] - 2026
 
 ### Added
@@ -100,6 +127,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Admin update feature** — check GitHub releases and automatically update the running stack.
 - **REST API** — full REST API with JWT authentication and MFA.
 
+[1.2.0]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.0.3...v1.1.0
 [1.0.3]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.0.1...v1.0.2
