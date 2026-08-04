@@ -1,5 +1,5 @@
 import { useThemeStore } from "@/shared/lib/theme-store";
-import { Network, Shield, Globe, Radar, Box, Monitor, Table, Layers } from "lucide-react";
+import { Network, Shield, Globe, Radar, Box, Monitor, Table, Layers, Database } from "lucide-react";
 
 const features = [
   {
@@ -42,14 +42,19 @@ const features = [
     title: "Virtual IP Inventory",
     description: "Track Virtual IPs (Keepalived, CARP/VRRP, load balancers, Kubernetes, floating cloud IPs) and link them to their backing node IPs with role bindings.",
   },
+  {
+    icon: Database,
+    title: "Backup & Restore",
+    description: "Full database backups via native PostgreSQL dump/restore, downloadable archives, a restore wizard, and automated daily backups with retention.",
+  },
 ];
 
 const techStack = [
-  { category: "Backend", items: ["Python 3.12", "FastAPI", "SQLAlchemy 2.0", "Alembic", "Pydantic v2", "PostgreSQL 16", "Redis 7", "Celery", "httpx", "uvicorn"] },
+  { category: "Backend", items: ["Python 3.12", "FastAPI", "SQLAlchemy 2.0", "Alembic", "Pydantic v2", "PostgreSQL 16", "Redis 7", "Celery + Celery Beat", "httpx", "uvicorn"] },
   { category: "Frontend", items: ["React 19", "TypeScript", "Vite 6", "Tailwind CSS v4", "TanStack Query", "TanStack Table", "Zustand", "React Hook Form", "Zod", "Recharts", "Leaflet / react-leaflet", "jsPDF + jspdf-autotable", "axios", "lucide-react"] },
   { category: "Discovery", items: ["pysnmp-lextudio (SNMP v1/v2c/v3)", "pypsrp (WinRM)", "ICMP/ARP scanning"] },
   { category: "Security", items: ["PyJWT", "bcrypt", "passlib", "TOTP MFA", "Fernet encryption", "slowapi rate limiting"] },
-  { category: "Infrastructure", items: ["Docker Compose", "Nginx", "Certbot (Let's Encrypt)", "GitHub Actions CI"] },
+  { category: "Infrastructure", items: ["Docker Compose", "Nginx", "Certbot (Let's Encrypt)", "pg_dump / pg_restore", "GitHub Actions CI"] },
 ];
 
 export default function AboutPage() {
@@ -121,7 +126,7 @@ export default function AboutPage() {
       <div className={`rounded-lg border p-4 ${dark ? "border-gray-700 bg-gray-800" : "border-gray-200 bg-white"}`}>
         <h2 className={`text-lg font-semibold mb-2 ${dark ? "text-white" : "text-gray-900"}`}>Version</h2>
         <p className={`text-sm ${dark ? "text-gray-400" : "text-gray-600"}`}>
-          SubnetIQ v1.3.1 &mdash; Built with modern open-source technologies.
+          SubnetIQ v1.3.2 &mdash; Built with modern open-source technologies.
         </p>
       </div>
     </div>

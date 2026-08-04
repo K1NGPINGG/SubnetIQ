@@ -72,6 +72,14 @@ export default function HelpPage() {
       <Section title="What's New" defaultOpen>
         <div className="space-y-4">
           <div>
+            <h4 className="text-xs font-bold uppercase tracking-wide text-blue-600 dark:text-blue-400">v1.3.0</h4>
+            <ul className="list-disc list-inside space-y-1 ml-2 mt-1">
+              <li><strong>Backup &amp; Restore</strong> &mdash; Full database backups via native PostgreSQL dump/restore, downloadable archives, a restore wizard, and automated daily backups with retention (Administration &rarr; Backups).</li>
+              <li><strong>Dashboard map</strong> &mdash; Site markers open on click with scrollable popups, smoother zoom with no white gaps, and themed popups.</li>
+              <li><strong>Recent Activity feed</strong> &mdash; A live audit feed on the dashboard, plus a utilization progress bar on the Allocated KPI card.</li>
+            </ul>
+          </div>
+          <div>
             <h4 className="text-xs font-bold uppercase tracking-wide text-blue-600 dark:text-blue-400">v1.2.0</h4>
             <ul className="list-disc list-inside space-y-1 ml-2 mt-1">
               <li><strong>Virtual IP (VIP) inventory</strong> &mdash; Mark IPs as VIPs, set their mechanism type, and link them to backing node IPs with roles. Includes a dedicated Virtual IPs page, VIP badges/filters, and editable VIP records.</li>
@@ -196,6 +204,18 @@ export default function HelpPage() {
             <li>Enable or disable webhooks without deleting them.</li>
           </ul>
           <p><strong>Note:</strong> failed async webhook deliveries are logged to the system log for troubleshooting.</p>
+        </div>
+      </Section>
+
+      <Section title="Backup & Restore">
+        <div className="space-y-3">
+          <p>SubnetIQ includes built-in <strong>disaster recovery</strong> for the database (Administration &rarr; Backups):</p>
+          <ul className="list-disc list-inside space-y-1 ml-2">
+            <li><strong>Create a backup</strong> &mdash; &ldquo;Create Backup Now&rdquo; runs a native <code>pg_dump</code> in the background and bundles the dump plus a manifest (schema/app versions) into a timestamped <code>.tar.gz</code> archive.</li>
+            <li><strong>Download / delete</strong> &mdash; stored backups are listed with size, creation time, and a manual/automated tag; download or delete them from the table.</li>
+            <li><strong>Restore</strong> &mdash; upload a <code>.tar.gz</code> backup; SubnetIQ validates schema/app compatibility, terminates active connections, and restores with <code>pg_restore --clean</code>. Restoring is destructive &mdash; you must type <strong>CONFIRM</strong> to proceed.</li>
+            <li><strong>Automated backups</strong> &mdash; a scheduled task creates a backup daily at midnight and enforces a 7-day retention policy.</li>
+          </ul>
         </div>
       </Section>
 
@@ -393,6 +413,13 @@ POST /api/v1/auth/login         # Include "mfa_code" when enabled`}</CodeBlock>
           <ApiEndpoint method="GET" path="/api/v1/search?q=term" desc="Global search across subnets, IPs, sites, assets" />
           <ApiEndpoint method="GET" path="/api/v1/logs/" desc="System logs with level/category/source filters" />
           <ApiEndpoint method="GET" path="/api/v1/audit/" desc="Audit trail with entity-type and action filters" />
+
+          <h4 className={`font-semibold text-xs mt-4 mb-2 ${dark ? "text-gray-400" : "text-gray-500"}`}>BACKUPS (admin)</h4>
+          <ApiEndpoint method="POST" path="/api/v1/system/backups/create" desc="Trigger a background full database backup (Celery pg_dump)" />
+          <ApiEndpoint method="GET" path="/api/v1/system/backups" desc="List stored backup archives" />
+          <ApiEndpoint method="GET" path="/api/v1/system/backups/{filename}/download" desc="Download a backup archive" />
+          <ApiEndpoint method="DELETE" path="/api/v1/system/backups/{filename}" desc="Delete a stored backup" />
+          <ApiEndpoint method="POST" path="/api/v1/system/backups/restore" desc="Upload and restore a backup (destructive)" />
         </div>
       </Section>
 
