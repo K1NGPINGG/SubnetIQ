@@ -1,6 +1,6 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { createColumnHelper } from "@tanstack/react-table";
-import { Plus, Pencil, Trash2, Search, Layers } from "lucide-react";
+import { Plus, Trash2, Search, Layers } from "lucide-react";
 import {
   useIpAddresses,
   useCreateIp,
@@ -10,6 +10,7 @@ import {
 } from "@/hooks/api";
 import { DataTable } from "@/components/ui/DataTable";
 import { Badge } from "@/components/ui/Badge";
+import { EditButton } from "@/components/ui/EditButton";
 import { Modal } from "@/components/ui/Modal";
 import { useThemeStore } from "@/shared/lib/theme-store";
 import type { IPAddress } from "@/types/api";
@@ -82,20 +83,20 @@ export default function VirtualIpsPage() {
     }),
     col.accessor("hostname", {
       header: "Hostname",
-      cell: (info) => info.getValue() ?? "—",
+      cell: (info) => info.getValue() ?? "â€”",
     }),
     col.accessor("vip_type" as any, {
       header: "VIP Type",
       cell: (info) => {
         const ip = info.row.original as IPAddress;
-        return ip.vip_type ? <Badge variant="default">{ip.vip_type}</Badge> : "—";
+        return ip.vip_type ? <Badge variant="default">{ip.vip_type}</Badge> : "â€”";
       },
     }),
     col.accessor("node_bindings" as any, {
       header: "Backing Nodes",
       cell: (info) => {
         const ip = info.row.original as IPAddress;
-        if (!ip.node_bindings || ip.node_bindings.length === 0) return "—";
+        if (!ip.node_bindings || ip.node_bindings.length === 0) return "â€”";
         return (
           <div className="flex flex-wrap gap-1">
             {ip.node_bindings.map((b) => (
@@ -129,12 +130,7 @@ export default function VirtualIpsPage() {
       header: "Actions",
       cell: (info) => (
         <div className="flex items-center gap-1">
-          <button
-            onClick={() => setEditItem(info.row.original as IPAddress)}
-            className={`rounded p-1.5 ${dark ? "text-gray-400 hover:bg-gray-700 hover:text-blue-400" : "text-gray-500 hover:bg-gray-100 hover:text-blue-600"}`}
-          >
-            <Pencil className="h-4 w-4" />
-          </button>
+                    <EditButton onClick={() => setEditItem(info.row.original as IPAddress)} />
           <button
             onClick={() => setDeleteItem(info.row.original as IPAddress)}
             className={`rounded p-1.5 ${dark ? "text-gray-400 hover:bg-red-900/30 hover:text-red-400" : "text-gray-500 hover:bg-red-50 hover:text-red-600"}`}

@@ -544,7 +544,7 @@ export function useDashboard(limit?: number) {
   return useQuery({
     queryKey: [...reportKeys.dashboard(), limit],
     queryFn: () => {
-      const params = limit ? `?limit=${limit}` : "";
+      const params = typeof limit === "number" ? `?limit=${limit}` : "";
       return apiClient.get<DashboardResponse>(`/reports/dashboard${params}`).then((res) => res.data);
     },
   });

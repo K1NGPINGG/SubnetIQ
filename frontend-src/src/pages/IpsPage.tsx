@@ -1,7 +1,7 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Pencil, Trash2, Search, Wifi, WifiOff, RefreshCw, Download, Check, Edit, Layers, X } from "lucide-react";
+import { Plus, Trash2, Search, Wifi, WifiOff, RefreshCw, Download, Check, Edit, Layers, X } from "lucide-react";
 import { createColumnHelper } from "@tanstack/react-table";
 import {
   useIpAddresses,
@@ -19,6 +19,7 @@ import {
 } from "@/lib/validators";
 import { DataTable } from "@/components/ui/DataTable";
 import { Badge } from "@/components/ui/Badge";
+import { EditButton } from "@/components/ui/EditButton";
 import { Modal } from "@/components/ui/Modal";
 import { useThemeStore } from "@/shared/lib/theme-store";
 import type {
@@ -118,7 +119,7 @@ function ScanResultsView({ subnet }: { subnet: Subnet }) {
       header: "Hostname",
       cell: (info) => {
         const host = info.row.original as DiscoveredHost;
-        return host.hostname ?? "—";
+        return host.hostname ?? "â€”";
       },
     }),
     col.accessor("is_alive" as any, {
@@ -148,7 +149,7 @@ function ScanResultsView({ subnet }: { subnet: Subnet }) {
       header: "Method",
       cell: (info) => {
         const host = info.row.original as DiscoveredHost;
-        return <span className="text-xs text-gray-500 uppercase">{host.scan_method ?? "—"}</span>;
+        return <span className="text-xs text-gray-500 uppercase">{host.scan_method ?? "â€”"}</span>;
       },
     }),
     col.accessor("mac_address" as any, {
@@ -157,7 +158,7 @@ function ScanResultsView({ subnet }: { subnet: Subnet }) {
         const host = info.row.original as DiscoveredHost;
         return host.mac_address ? (
           <span className="font-mono text-xs">{host.mac_address}</span>
-        ) : "—";
+        ) : "â€”";
       },
     }),
     col.accessor("sys_descr" as any, {
@@ -168,7 +169,7 @@ function ScanResultsView({ subnet }: { subnet: Subnet }) {
           <span className={`text-xs ${dark ? "text-gray-400" : "text-gray-500"}`} title={host.sys_descr}>
             {host.sys_descr.length > 40 ? host.sys_descr.slice(0, 40) + "..." : host.sys_descr}
           </span>
-        ) : "—";
+        ) : "â€”";
       },
     }),
     col.display({
@@ -232,7 +233,7 @@ function ScanResultsView({ subnet }: { subnet: Subnet }) {
             </h3>
             <p className={`text-sm ${dark ? "text-gray-400" : "text-gray-500"}`}>
               Scanned {scanData.results?.total_hosts_scanned ?? 0} hosts on{" "}
-              {scanData.completed_at ? new Date(scanData.completed_at).toLocaleString() : "—"}
+              {scanData.completed_at ? new Date(scanData.completed_at).toLocaleString() : "â€”"}
             </p>
           </div>
           <div className="flex gap-2">
@@ -407,7 +408,7 @@ export default function IpsPage() {
       header: "VIP Type",
       cell: (info) => {
         const ip = info.row.original as IPAddress;
-        if (!ip.is_vip || !ip.vip_type) return "—";
+        if (!ip.is_vip || !ip.vip_type) return "â€”";
         return (
           <Badge variant="default">{ip.vip_type}</Badge>
         );
@@ -417,7 +418,7 @@ export default function IpsPage() {
       header: "VIP Nodes",
       cell: (info) => {
         const ip = info.row.original as IPAddress;
-        if (!ip.is_vip || !ip.node_bindings || ip.node_bindings.length === 0) return "—";
+        if (!ip.is_vip || !ip.node_bindings || ip.node_bindings.length === 0) return "â€”";
         return (
           <div className="flex flex-wrap gap-1">
             {ip.node_bindings.map((b) => (
@@ -442,7 +443,7 @@ export default function IpsPage() {
     }),
     col.accessor("hostname", {
       header: "Hostname",
-      cell: (info) => info.getValue() ?? "—",
+      cell: (info) => info.getValue() ?? "â€”",
     }),
     col.accessor("status", {
       header: "Status",
@@ -459,15 +460,15 @@ export default function IpsPage() {
       header: "MAC Address",
       cell: (info) => info.getValue() ? (
         <span className={`font-mono text-xs ${dark ? "text-gray-300" : "text-gray-600"}`}>{info.getValue()}</span>
-      ) : "—",
+      ) : "â€”",
     }),
     col.accessor("device_type", {
       header: "Device Type",
-      cell: (info) => info.getValue() ?? "—",
+      cell: (info) => info.getValue() ?? "â€”",
     }),
     col.accessor("assigned_to", {
       header: "Assigned To",
-      cell: (info) => info.getValue() ?? "—",
+      cell: (info) => info.getValue() ?? "â€”",
     }),
     col.accessor("subnet_id", {
       header: "Subnet",
@@ -477,7 +478,7 @@ export default function IpsPage() {
           <span className={`text-xs ${dark ? "text-gray-400" : "text-gray-500"}`}>
             {subnet.network_address}/{subnet.prefix_length}
           </span>
-        ) : "—";
+        ) : "â€”";
       },
     }),
     col.accessor("created_at" as any, {
@@ -493,12 +494,7 @@ export default function IpsPage() {
       header: "Actions",
       cell: (info) => (
         <div className="flex items-center gap-1">
-          <button
-            onClick={() => setEditItem(info.row.original as IPAddress)}
-            className={`rounded p-1.5 ${dark ? "text-gray-400 hover:bg-gray-700 hover:text-blue-400" : "text-gray-500 hover:bg-gray-100 hover:text-blue-600"}`}
-          >
-            <Pencil className="h-4 w-4" />
-          </button>
+                    <EditButton onClick={() => setEditItem(info.row.original as IPAddress)} />
           <button
             onClick={() => setDeleteItem(info.row.original as IPAddress)}
             className={`rounded p-1.5 ${dark ? "text-gray-400 hover:bg-red-900/30 hover:text-red-400" : "text-gray-500 hover:bg-red-50 hover:text-red-600"}`}
@@ -1213,7 +1209,7 @@ function BulkEditModal({
             onChange={(e) => setStatus(e.target.value)}
             className={inputClass}
           >
-            <option value="">— No change —</option>
+            <option value="">â€” No change â€”</option>
             <option value="allocated">Allocated</option>
             <option value="reserved">Reserved</option>
             <option value="available">Available</option>

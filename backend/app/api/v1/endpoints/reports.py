@@ -38,7 +38,7 @@ async def _subnet_used_count(
 
 @router.get("/dashboard", summary="Get dashboard summary")
 async def get_dashboard(
-    limit: int = Query(5, description="Number of top subnets to return"),
+    limit: int = Query(0, ge=0, le=500, description="Number of top subnets to return (0 = all)"),
     db: AsyncSession = Depends(get_db),
     tenant_id: UUID = Depends(validate_tenant_access),
     current_user: User = Depends(get_current_active_user),
@@ -87,7 +87,7 @@ async def get_dashboard(
     # Top subnets by utilization (leaf and container aware)
     subnet_utilization: list[dict[str, Any]] = []
     subnets_result = await db.execute(
-        select(Subnet).where(Subnet.tenant_id == tenant_id).limit(10)
+        select(Subnet).where(Subnet.tenant_id == tenant_id)
     )
 
     for subnet in subnets_result.scalars().all():
@@ -135,7 +135,7 @@ async def get_dashboard(
             "available_ips": available_ips,
             "unused_ips": unused_ips,
         },
-        "top_subnets_by_utilization": subnet_utilization[:limit],
+        "top_subnets_by_utilization": subnet_utilization[:limit] if limit else subnet_utilization,
     }
 
 

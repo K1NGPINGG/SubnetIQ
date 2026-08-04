@@ -1,12 +1,13 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Pencil, Trash2, Search } from "lucide-react";
+import { Plus, Trash2, Search } from "lucide-react";
 import { createColumnHelper } from "@tanstack/react-table";
 import { useVlans, useCreateVlan, useUpdateVlan, useDeleteVlan, useSites } from "@/hooks/api";
 import { vlanCreateSchema, vlanUpdateSchema } from "@/lib/validators";
 import { DataTable } from "@/components/ui/DataTable";
 import { Modal } from "@/components/ui/Modal";
+import { EditButton } from "@/components/ui/EditButton";
 import type { VLAN, VLANCreate, VLANUpdate } from "@/types/api";
 import type { PaginationState } from "@tanstack/react-table";
 import { useThemeStore } from "@/shared/lib/theme-store";
@@ -62,13 +63,13 @@ export default function VlansPage() {
     }),
     col.accessor("description", {
       header: "Description",
-      cell: (info) => info.getValue() ?? "—",
+      cell: (info) => info.getValue() ?? "â€”",
     }),
     col.accessor("site_id", {
       header: "Site",
       cell: (info) => {
         const site = sites.find((s) => s.id === info.getValue());
-        return site?.name ?? "—";
+        return site?.name ?? "â€”";
       },
     }),
     col.display({
@@ -76,12 +77,7 @@ export default function VlansPage() {
       header: "Actions",
       cell: (info) => (
         <div className="flex items-center gap-1">
-          <button
-            onClick={() => setEditItem(info.row.original)}
-            className={`rounded p-1.5 ${dark ? "text-gray-400 hover:bg-gray-700 hover:text-blue-400" : "text-gray-500 hover:bg-gray-100 hover:text-blue-600"}`}
-          >
-            <Pencil className="h-4 w-4" />
-          </button>
+                    <EditButton onClick={() => setEditItem(info.row.original)} />
           <button
             onClick={() => setDeleteItem(info.row.original)}
             className={`rounded p-1.5 ${dark ? "text-gray-400 hover:bg-red-900/30 hover:text-red-400" : "text-gray-500 hover:bg-red-50 hover:text-red-600"}`}

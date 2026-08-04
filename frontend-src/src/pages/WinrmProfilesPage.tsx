@@ -1,8 +1,8 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Pencil, Trash2, Search, Eye, EyeOff, Monitor } from "lucide-react";
+import { Plus, Trash2, Search, Eye, EyeOff, Monitor } from "lucide-react";
 import { createColumnHelper } from "@tanstack/react-table";
 import {
   useWinrmCredentials,
@@ -12,6 +12,7 @@ import {
 } from "@/hooks/api";
 import { DataTable } from "@/components/ui/DataTable";
 import { Badge } from "@/components/ui/Badge";
+import { EditButton } from "@/components/ui/EditButton";
 import { Modal } from "@/components/ui/Modal";
 import type { WinRMCredential, WinRMCredentialCreate } from "@/types/api";
 import type { PaginationState } from "@tanstack/react-table";
@@ -111,16 +112,7 @@ export default function WinrmProfilesPage() {
       header: "Actions",
       cell: (info) => (
         <div className="flex items-center gap-1">
-          <button
-            onClick={() => setEditItem(info.row.original)}
-            className={`rounded p-1.5 ${
-              dark
-                ? "text-gray-400 hover:bg-gray-700 hover:text-blue-400"
-                : "text-gray-500 hover:bg-gray-100 hover:text-blue-600"
-            }`}
-          >
-            <Pencil className="h-4 w-4" />
-          </button>
+                    <EditButton onClick={() => setEditItem(info.row.original)} />
           <button
             onClick={() => setDeleteItem(info.row.original)}
             className={`rounded p-1.5 ${

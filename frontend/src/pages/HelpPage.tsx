@@ -70,22 +70,42 @@ export default function HelpPage() {
       </div>
 
       <Section title="What's New" defaultOpen>
-        <div className="space-y-3">
-          <ul className="list-disc list-inside space-y-1 ml-2">
-            <li><strong>Virtual IP (VIP) inventory</strong> &mdash; Mark IPs as VIPs, set their mechanism type, and link them to backing node IPs with roles.</li>
-            <li><strong>IPAM Records</strong> &mdash; A unified, searchable view of every IP across all subnets with per-record editing, bulk editing, and CSV/PDF export.</li>
-            <li><strong>Live scan status</strong> &mdash; Discovery scan progress now updates automatically while a scan runs &mdash; no manual refresh needed.</li>
-            <li><strong>Admin updates</strong> &mdash; Check for new SubnetIQ releases and update the stack from the Admin area.</li>
-            <li><strong>Address hierarchy</strong> &mdash; VRFs, RIRs, Aggregates, IP Ranges, and ASNs for structured IPAM.</li>
-            <li><strong>Metadata</strong> &mdash; Tags, Custom Fields, and Validation Rules on subnets, IPs, and sites.</li>
-            <li><strong>Approval workflow</strong> &mdash; Request/approve/reject IP releases for privileged control.</li>
-            <li><strong>Webhooks</strong> &mdash; Notify external systems on IP create/update/delete.</li>
-            <li><strong>Global search</strong> &mdash; One box to find subnets, IPs, sites, and assets.</li>
-            <li><strong>System logs</strong> &mdash; Backend application logs with level/category/source filters.</li>
-            <li><strong>Multi-factor authentication</strong> &mdash; Optional TOTP MFA for user accounts.</li>
-            <li><strong>Bulk IP creation</strong> &mdash; Create many IPs in one request from the IPs page.</li>
-            <li><strong>Scan run-now</strong> &mdash; Trigger any scheduled scan immediately.</li>
-          </ul>
+        <div className="space-y-4">
+          <div>
+            <h4 className="text-xs font-bold uppercase tracking-wide text-blue-600 dark:text-blue-400">v1.2.0</h4>
+            <ul className="list-disc list-inside space-y-1 ml-2 mt-1">
+              <li><strong>Virtual IP (VIP) inventory</strong> &mdash; Mark IPs as VIPs, set their mechanism type, and link them to backing node IPs with roles. Includes a dedicated Virtual IPs page, VIP badges/filters, and editable VIP records.</li>
+              <li><strong>Update tracking</strong> &mdash; A live progress bar while the stack updates, a manual &ldquo;Check for updates&rdquo; button, and automatic reload once an update completes.</li>
+              <li><strong>Resizable dashboard map</strong> &mdash; Drag the map handle to resize it, with scrollable site tooltips.</li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="text-xs font-bold uppercase tracking-wide text-blue-600 dark:text-blue-400">v1.0.3</h4>
+            <ul className="list-disc list-inside space-y-1 ml-2 mt-1">
+              <li><strong>IPAM Records</strong> &mdash; A unified, searchable view of every IP across all subnets with per-record editing, bulk editing, and CSV/PDF export.</li>
+              <li><strong>Live scan status</strong> &mdash; Discovery scan progress now updates automatically while a scan runs &mdash; no manual refresh needed.</li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="text-xs font-bold uppercase tracking-wide text-blue-600 dark:text-blue-400">v1.0.2</h4>
+            <ul className="list-disc list-inside space-y-1 ml-2 mt-1">
+              <li><strong>Admin updates</strong> &mdash; Check for new SubnetIQ releases and update the stack from the Admin area.</li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="text-xs font-bold uppercase tracking-wide text-blue-600 dark:text-blue-400">v1.0.0</h4>
+            <ul className="list-disc list-inside space-y-1 ml-2 mt-1">
+              <li><strong>Address hierarchy</strong> &mdash; VRFs, RIRs, Aggregates, IP Ranges, and ASNs for structured IPAM.</li>
+              <li><strong>Metadata</strong> &mdash; Tags, Custom Fields, and Validation Rules on subnets, IPs, and sites.</li>
+              <li><strong>Approval workflow</strong> &mdash; Request/approve/reject IP releases for privileged control.</li>
+              <li><strong>Webhooks</strong> &mdash; Notify external systems on IP create/update/delete.</li>
+              <li><strong>Global search</strong> &mdash; One box to find subnets, IPs, sites, and assets.</li>
+              <li><strong>System logs</strong> &mdash; Backend application logs with level/category/source filters.</li>
+              <li><strong>Multi-factor authentication</strong> &mdash; Optional TOTP MFA for user accounts.</li>
+              <li><strong>Bulk IP creation</strong> &mdash; Create many IPs in one request from the IPs page.</li>
+              <li><strong>Scan run-now</strong> &mdash; Trigger any scheduled scan immediately.</li>
+            </ul>
+          </div>
         </div>
       </Section>
 

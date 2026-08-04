@@ -1,10 +1,9 @@
-import { useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Plus,
-  Pencil,
   Trash2,
   Search,
   Users,
@@ -31,6 +30,7 @@ import {
 import { adminUserCreateSchema, adminUserUpdateSchema } from "@/lib/validators";
 import { DataTable } from "@/components/ui/DataTable";
 import { Badge } from "@/components/ui/Badge";
+import { EditButton } from "@/components/ui/EditButton";
 import { Modal } from "@/components/ui/Modal";
 import type { User, UserCreate, UserUpdate } from "@/types/api";import type { PaginationState } from "@tanstack/react-table";
 import { useThemeStore } from "@/shared/lib/theme-store";
@@ -41,7 +41,7 @@ const userCol = createColumnHelper<User>();
 
 type Tab = "users" | "integrations" | "snmp" | "winrm" | "update";
 
-// ── Integration settings state ───────────────────────────────────────
+// â”€â”€ Integration settings state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface IntegrationSettings {
   azure_ad: {
@@ -101,7 +101,7 @@ const defaultSettings: IntegrationSettings = {
   },
 };
 
-// ── Main Admin Page ───────────────────────────────────────────────────
+// â”€â”€ Main Admin Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export default function AdminPage() {
   const location = useLocation();
@@ -125,7 +125,7 @@ export default function AdminPage() {
   );
 }
 
-// ── Users Tab ─────────────────────────────────────────────────────────
+// â”€â”€ Users Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function UsersTab() {
   const dark = useThemeStore((s) => s.dark);
@@ -210,16 +210,7 @@ function UsersTab() {
       header: "Actions",
       cell: (info) => (
         <div className="flex items-center gap-1">
-          <button
-            onClick={() => setEditItem(info.row.original)}
-            className={`rounded p-1.5 ${
-              dark
-                ? "text-gray-400 hover:bg-gray-700 hover:text-blue-400"
-                : "text-gray-500 hover:bg-gray-100 hover:text-blue-600"
-            }`}
-          >
-            <Pencil className="h-4 w-4" />
-          </button>
+                    <EditButton onClick={() => setEditItem(info.row.original)} />
           <button
             onClick={() => setDeleteItem(info.row.original)}
             className={`rounded p-1.5 ${
@@ -348,7 +339,7 @@ function UsersTab() {
   );
 }
 
-// ── User Form Modal ───────────────────────────────────────────────────
+// â”€â”€ User Form Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function UserFormModal({
   open,
@@ -518,7 +509,7 @@ function UserFormModal({
                 className="h-4 w-4 rounded border-gray-300"
               />
               <label htmlFor="mfa_enforced" className={`text-sm ${dark ? "text-gray-300" : "text-gray-700"}`}>
-                Enforce MFA — require this user to set up multi-factor authentication
+                Enforce MFA â€” require this user to set up multi-factor authentication
               </label>
             </div>
           </>
@@ -528,19 +519,19 @@ function UserFormModal({
   );
 }
 
-// ── SNMP Profiles Tab ──────────────────────────────────────────────────
+// â”€â”€ SNMP Profiles Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function SnmpTab() {
   return <SnmpProfilesPage />;
 }
 
-// ── WinRM Profiles Tab ──────────────────────────────────────────────
+// â”€â”€ WinRM Profiles Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function WinrmTab() {
   return <WinrmProfilesPage />;
 }
 
-// ── Integrations Tab ──────────────────────────────────────────────────
+// â”€â”€ Integrations Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function IntegrationsTab() {
   const dark = useThemeStore((s) => s.dark);
@@ -858,11 +849,11 @@ function IntegrationsTab() {
   );
 }
 
-// ── Update Tab ─────────────────────────────────────────────────────────
+// â”€â”€ Update Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function UpdateTab() {
   const dark = useThemeStore((s) => s.dark);
-  const { data, isLoading } = useUpdateStatus();
+  const { data, isLoading, refetch } = useUpdateStatus();
   const runMutation = useRunUpdate();
   const checkMutation = useCheckUpdate();
 
@@ -870,7 +861,33 @@ function UpdateTab() {
   const running = state?.status === "running";
   const progress =
     typeof state?.progress === "number" ? Math.max(0, Math.min(100, state.progress)) : null;
-  const showProgress = running || state?.status === "failed";
+  const [triggered, setTriggered] = useState(false);
+  const [reloading, setReloading] = useState(false);
+
+  // Poll fast while an update was just triggered so the progress bar is caught
+  // even for quick (cached) updates before the status query's own interval kicks in.
+  useEffect(() => {
+    if (!triggered) return;
+    const id = setInterval(() => {
+      refetch();
+    }, 2000);
+    return () => clearInterval(id);
+  }, [triggered, refetch]);
+
+  // Auto-refresh the app once the update completes so the new build/version loads.
+  useEffect(() => {
+    if (state?.status === "success" && (triggered || reloading)) {
+      setTriggered(false);
+      setReloading(true);
+      const t = setTimeout(() => window.location.reload(), 1500);
+      return () => clearTimeout(t);
+    }
+    if (state?.status === "failed") {
+      setTriggered(false);
+    }
+  }, [state?.status, triggered, reloading]);
+
+  const showProgress = running || state?.status === "failed" || triggered || reloading;
 
   const cardClass = `rounded-lg border p-5 ${dark ? "border-gray-700 bg-gray-800" : "border-gray-200 bg-white"}`;
   const labelClass = `text-xs font-medium uppercase tracking-wide ${dark ? "text-gray-400" : "text-gray-500"}`;
@@ -896,7 +913,7 @@ function UpdateTab() {
             )}
             <button
               onClick={() => checkMutation.mutate()}
-              disabled={running || checkMutation.isPending || data?.enabled === false}
+              disabled={running || triggered || checkMutation.isPending || data?.enabled === false}
               className={`inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                 dark
                   ? "border-gray-600 bg-gray-700 text-gray-200 hover:bg-gray-600"
@@ -960,7 +977,9 @@ function UpdateTab() {
               <div className="flex items-center gap-2 text-sm">
                 {running && <RefreshCw className="h-4 w-4 animate-spin text-blue-500" />}
                 <span className={`font-medium ${dark ? "text-gray-200" : "text-gray-800"}`}>
-                  {state?.step ?? (running ? "Preparing update..." : "Update failed")}
+                  {reloading
+                    ? "Update complete â€” reloading app..."
+                    : (state?.step ?? (running ? "Preparing update..." : triggered ? "Starting update..." : "Update failed"))}
                 </span>
               </div>
               {progress !== null && (
@@ -974,9 +993,11 @@ function UpdateTab() {
                 className={`h-full rounded-full transition-all duration-500 ${
                   state?.status === "failed"
                     ? "bg-red-500"
+                    : reloading
+                    ? "bg-green-500"
                     : "bg-blue-500"
                 } ${progress === null ? "animate-pulse" : ""}`}
-                style={{ width: progress !== null ? `${progress}%` : "40%" }}
+                style={{ width: progress !== null ? `${progress}%` : reloading ? "100%" : "40%" }}
               />
             </div>
             {state?.tag && (
@@ -1001,13 +1022,15 @@ function UpdateTab() {
               <button
                 onClick={() => {
                   if (window.confirm(`Update SubnetIQ to ${data.latest_release.tag_name}? The stack will be rebuilt and restarted.`)) {
-                    runMutation.mutate(data.latest_release?.tag_name);
+                    runMutation.mutate(data.latest_release?.tag_name, {
+                      onSuccess: () => setTriggered(true),
+                    });
                   }
                 }}
-                disabled={running}
+                disabled={running || triggered || reloading}
                 className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
               >
-                {running ? (
+                {running || triggered ? (
                   <>
                     <RefreshCw className="h-4 w-4 animate-spin" />
                     Updating...

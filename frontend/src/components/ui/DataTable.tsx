@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -8,6 +9,7 @@ import {
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 import { useThemeStore } from "@/shared/lib/theme-store";
+import { getPersistedPageSize, persistPageSize } from "@/lib/page-size";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -43,10 +45,22 @@ export function DataTable<TData, TValue>({
   const totalRows = data.length;
 
   const setPageSize = (size: number) => {
+    persistPageSize(size);
     if (typeof onPaginationChange === "function") {
       onPaginationChange({ pageIndex: 0, pageSize: size });
     }
   };
+
+  // Remember the user's page-size preference: sync the persisted value on mount
+  // so every page starts with the last-selected "results per page".
+  useEffect(() => {
+    if (typeof onPaginationChange !== "function") return;
+    const persisted = getPersistedPageSize();
+    if (pagination && pagination.pageSize !== persisted) {
+      onPaginationChange({ pageIndex: 0, pageSize: persisted });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const goToPage = (page: number) => {
     if (typeof onPaginationChange === "function") {

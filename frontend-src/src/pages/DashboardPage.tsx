@@ -66,7 +66,7 @@ function getBarColor(pct: number): string {
 export default function DashboardPage() {
   const dark = useThemeStore((s) => s.dark);
   const [limit, setLimit] = useState(5);
-  const { data, isLoading } = useDashboard(limit || undefined);
+  const { data, isLoading } = useDashboard(limit);
 
   if (isLoading) {
     return (
