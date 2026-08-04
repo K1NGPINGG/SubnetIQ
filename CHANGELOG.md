@@ -5,6 +5,14 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.6] - 2026
+
+### Changed
+
+- **Official logo applied** — the shipped SubnetIQ logo (geometric cyan/sapphire "iq"
+  monogram) is now used as the browser favicon/page icon and across the sidebar, login
+  page, and About page, alongside the "SubnetIQ" wordmark.
+
 ## [1.3.5] - 2026
 
 ### Changed
@@ -275,6 +283,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Admin update feature** — check GitHub releases and automatically update the running stack.
 - **REST API** — full REST API with JWT authentication and MFA.
 
+[1.3.6]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.3.5...v1.3.6
 [1.3.5]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.3.4...v1.3.5
 [1.3.4]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.3.3...v1.3.4
 [1.3.3]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.3.2...v1.3.3
