@@ -32,8 +32,10 @@ import { DataTable } from "@/components/ui/DataTable";
 import { Badge } from "@/components/ui/Badge";
 import { EditButton } from "@/components/ui/EditButton";
 import { Modal } from "@/components/ui/Modal";
-import type { User, UserCreate, UserUpdate } from "@/types/api";import type { PaginationState } from "@tanstack/react-table";
+import type { User, UserCreate, UserUpdate, UpdateStatusResponse } from "@/types/api";import type { PaginationState } from "@tanstack/react-table";
 import { useThemeStore } from "@/shared/lib/theme-store";
+import apiClient from "@/shared/lib/api-client";
+import { formatUkDateTime, formatUkTimestampsInText } from "@/lib/format";
 import SnmpProfilesPage from "@/pages/SnmpProfilesPage";
 import WinrmProfilesPage from "@/pages/WinrmProfilesPage";
 
@@ -853,39 +855,55 @@ function IntegrationsTab() {
 
 function UpdateTab() {
   const dark = useThemeStore((s) => s.dark);
-  const { data, isLoading, refetch } = useUpdateStatus();
+  const { data, isLoading } = useUpdateStatus();
   const runMutation = useRunUpdate();
   const checkMutation = useCheckUpdate();
 
-  const state = data?.state;
-  const running = state?.status === "running";
-  const progress =
-    typeof state?.progress === "number" ? Math.max(0, Math.min(100, state.progress)) : null;
   const [triggered, setTriggered] = useState(false);
   const [reloading, setReloading] = useState(false);
+  const [liveState, setLiveState] = useState<UpdateStatusResponse["state"] | null>(null);
 
-  // Poll fast while an update was just triggered so the progress bar is caught
-  // even for quick (cached) updates before the status query's own interval kicks in.
+  // While an update is active, poll the status endpoint directly (every 1.5s) so
+  // the progress bar tracks reliably even while the app containers are being
+  // recreated mid-update. Reloads the app once the update completes.
   useEffect(() => {
     if (!triggered) return;
-    const id = setInterval(() => {
-      refetch();
-    }, 2000);
-    return () => clearInterval(id);
-  }, [triggered, refetch]);
+    let stopped = false;
+    const poll = async () => {
+      try {
+        const res = await apiClient.get<UpdateStatusResponse>("/admin/update/status");
+        if (stopped) return;
+        setLiveState(res.data.state ?? null);
+        if (res.data.state?.status === "success") {
+          setTriggered(false);
+          setReloading(true);
+        } else if (res.data.state?.status === "failed") {
+          setTriggered(false);
+        }
+      } catch {
+        // Transient failures occur while containers restart mid-update.
+      }
+    };
+    poll();
+    const id = setInterval(poll, 1500);
+    return () => {
+      stopped = true;
+      clearInterval(id);
+    };
+  }, [triggered]);
 
-  // Auto-refresh the app once the update completes so the new build/version loads.
+  // Give the "Update complete" state a moment to display, then reload.
   useEffect(() => {
-    if (state?.status === "success" && (triggered || reloading)) {
-      setTriggered(false);
-      setReloading(true);
+    if (reloading) {
       const t = setTimeout(() => window.location.reload(), 1500);
       return () => clearTimeout(t);
     }
-    if (state?.status === "failed") {
-      setTriggered(false);
-    }
-  }, [state?.status, triggered, reloading]);
+  }, [reloading]);
+
+  const state = liveState ?? data?.state;
+  const running = state?.status === "running";
+  const progress =
+    typeof state?.progress === "number" ? Math.max(0, Math.min(100, state.progress)) : null;
 
   const showProgress = running || state?.status === "failed" || triggered || reloading;
 
@@ -971,6 +989,12 @@ function UpdateTab() {
           </div>
         </div>
 
+        {state?.finished_at && (
+          <div className={`mt-3 text-xs ${dark ? "text-gray-500" : "text-gray-500"}`}>
+            Last update: {formatUkDateTime(state.finished_at)}
+          </div>
+        )}
+
         {showProgress && (
           <div className={`mt-4 rounded-md border p-4 ${dark ? "border-gray-700 bg-gray-800" : "border-gray-200 bg-white"}`}>
             <div className="flex items-center justify-between gap-3">
@@ -1016,7 +1040,7 @@ function UpdateTab() {
                   New release {data.latest_release.tag_name} is available
                 </span>
                 <div className={`mt-1 text-xs ${dark ? "text-blue-400" : "text-blue-600"}`}>
-                  Published {data.latest_release.published_at ? new Date(data.latest_release.published_at).toLocaleString() : "unknown"}
+                  Published {data.latest_release.published_at ? formatUkDateTime(data.latest_release.published_at) : "unknown"}
                 </div>
               </div>
               <button
@@ -1062,7 +1086,7 @@ function UpdateTab() {
             dark ? "border-gray-700 bg-gray-950 text-gray-300" : "border-gray-200 bg-gray-50 text-gray-700"
           }`}
         >
-          {data?.log_tail ? data.log_tail : "No log output yet."}
+          {data?.log_tail ? formatUkTimestampsInText(data.log_tail) : "No log output yet."}
         </pre>
       </div>
     </div>
