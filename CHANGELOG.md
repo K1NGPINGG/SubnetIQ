@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.2] - 2026
+
+### Changed
+
+- **Dashboard Subnet Utilization panel** — now paginated to keep the dashboard tidy:
+  - "Show results per page" selector (5 / 10 / 20 / 50 / All), defaulting to **5**.
+  - Page navigation (previous/next + page numbers) so you can browse all subnets.
+  - The Subnets by Utilization chart's "All" option now renders every subnet (previously
+    capped at the top 5/10).
+
 ## [1.2.1] - 2026
 
 ### Fixed
@@ -143,6 +153,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Admin update feature** — check GitHub releases and automatically update the running stack.
 - **REST API** — full REST API with JWT authentication and MFA.
 
+[1.2.2]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.0.3...v1.1.0

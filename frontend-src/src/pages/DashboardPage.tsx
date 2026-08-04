@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Globe, CheckCircle, Clock, Network, ChevronDown } from "lucide-react";
+import { Globe, CheckCircle, Clock, Network, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -65,8 +65,13 @@ function getBarColor(pct: number): string {
 
 export default function DashboardPage() {
   const dark = useThemeStore((s) => s.dark);
+  // Chart "Top N" dropdown (5/10/20/All)
   const [limit, setLimit] = useState(5);
-  const { data, isLoading } = useDashboard(limit);
+  // Subnet Utilization list pagination
+  const [listPageSize, setListPageSize] = useState(5);
+  const [listPage, setListPage] = useState(0);
+  // Fetch all subnets once (limit=0) so the list can paginate over everything.
+  const { data, isLoading } = useDashboard(0);
 
   if (isLoading) {
     return (
@@ -78,6 +83,14 @@ export default function DashboardPage() {
 
   const summary = data?.summary;
   const topSubnets = data?.top_subnets_by_utilization ?? [];
+
+  const chartData = limit === 0 ? topSubnets : topSubnets.slice(0, limit);
+  const listPageCount = Math.max(1, Math.ceil(topSubnets.length / listPageSize));
+  const safeListPage = Math.min(listPage, listPageCount - 1);
+  const listPageData = topSubnets.slice(
+    safeListPage * listPageSize,
+    (safeListPage + 1) * listPageSize
+  );
 
   return (
     <div className="space-y-6">
@@ -142,10 +155,10 @@ export default function DashboardPage() {
               <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
             </div>
           </div>
-          {topSubnets.length > 0 ? (
+          {chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart
-                data={topSubnets}
+                data={chartData}
                 margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke={dark ? "#374151" : "#f1f5f9"} />
@@ -171,7 +184,7 @@ export default function DashboardPage() {
                   }}
                 />
                 <Bar dataKey="utilization_pct" radius={[4, 4, 0, 0]}>
-                  {topSubnets.map((entry, idx) => (
+                  {chartData.map((entry, idx) => (
                     <Cell
                       key={idx}
                       fill={getBarColor(entry.utilization_pct)}
@@ -188,12 +201,42 @@ export default function DashboardPage() {
         </div>
 
         <div className={`rounded-lg border p-4 shadow-sm ${dark ? "border-gray-700 bg-gray-800" : "border-gray-200 bg-white"}`}>
-          <h3 className={`mb-4 text-sm font-semibold ${dark ? "text-white" : "text-gray-900"}`}>
-            Subnet Utilization
-          </h3>
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className={`text-sm font-semibold ${dark ? "text-white" : "text-gray-900"}`}>
+              Subnet Utilization
+            </h3>
+            <div className="relative">
+              <select
+                value={listPageSize}
+                onChange={(e) => {
+                  setListPageSize(Number(e.target.value));
+                  setListPage(0);
+                }}
+                className={`appearance-none rounded-md border py-1.5 pl-3 pr-8 text-xs font-medium focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
+                  dark
+                    ? "border-gray-600 bg-gray-700 text-white"
+                    : "border-gray-300 bg-white text-gray-700"
+                }`}
+              >
+                {[
+                  { value: 5, label: "5 per page" },
+                  { value: 10, label: "10 per page" },
+                  { value: 20, label: "20 per page" },
+                  { value: 50, label: "50 per page" },
+                  { value: 99999, label: "All" },
+                ].map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
+            </div>
+          </div>
+
           <div className="space-y-3">
-            {topSubnets.length > 0 ? (
-              topSubnets.map((s) => (
+            {listPageData.length > 0 ? (
+              listPageData.map((s) => (
                 <div key={s.subnet_id}>
                   <div className="mb-1 flex items-center justify-between text-xs">
                     <span className={`font-medium ${dark ? "text-gray-300" : "text-gray-700"}`}>
@@ -220,6 +263,54 @@ export default function DashboardPage() {
               </div>
             )}
           </div>
+
+          {topSubnets.length > 0 && listPageSize < 99999 && (
+            <div className="mt-4 flex items-center justify-between border-t pt-3 text-sm">
+              <span className={`text-xs ${dark ? "text-gray-400" : "text-gray-500"}`}>
+                Page {safeListPage + 1} of {listPageCount} ({topSubnets.length} subnets)
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setListPage((p) => Math.max(0, p - 1))}
+                  disabled={safeListPage === 0}
+                  className={`inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                    dark ? "text-gray-400 hover:bg-gray-700" : "text-gray-500 hover:bg-gray-200"
+                  }`}
+                  title="Previous page"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                {Array.from({ length: Math.min(listPageCount, 7) }, (_, i) => {
+                  const page = i;
+                  return (
+                    <button
+                      key={page}
+                      onClick={() => setListPage(page)}
+                      className={`inline-flex h-7 min-w-[28px] items-center justify-center rounded-md px-1.5 text-xs font-medium transition-colors ${
+                        page === safeListPage
+                          ? "bg-blue-600 text-white"
+                          : dark
+                          ? "text-gray-400 hover:bg-gray-700"
+                          : "text-gray-600 hover:bg-gray-200"
+                      }`}
+                    >
+                      {page + 1}
+                    </button>
+                  );
+                })}
+                <button
+                  onClick={() => setListPage((p) => Math.min(listPageCount - 1, p + 1))}
+                  disabled={safeListPage >= listPageCount - 1}
+                  className={`inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                    dark ? "text-gray-400 hover:bg-gray-700" : "text-gray-500 hover:bg-gray-200"
+                  }`}
+                  title="Next page"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

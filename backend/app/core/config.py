@@ -17,7 +17,7 @@ class Settings(BaseSettings):
 
     # Application
     APP_NAME: str = "SubnetIQ"
-    APP_VERSION: str = "1.2.1"
+    APP_VERSION: str = "1.2.2"
     DEBUG: bool = False
 
     # Release updates
