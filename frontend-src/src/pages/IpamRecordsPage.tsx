@@ -10,6 +10,9 @@ import {
   Pencil,
   Check,
   Edit,
+  Layers,
+  Plus,
+  X,
 } from "lucide-react";
 import {
   useIpamRecords,
@@ -140,11 +143,27 @@ export default function IpamRecordsPage() {
     }),
     col.accessor("address", {
       header: "IP Address",
-      cell: (info) => (
-        <span className={`font-mono font-medium ${dark ? "text-white" : "text-gray-900"}`}>
-          {info.getValue()}
-        </span>
-      ),
+      cell: (info) => {
+        const ip = info.row.original as IPAddress;
+        return (
+          <div className="flex items-center gap-2">
+            <span className={`font-mono font-medium ${dark ? "text-white" : "text-gray-900"}`}>
+              {info.getValue()}
+            </span>
+            {ip.is_vip && (
+              <span
+                title={`Virtual IP (${ip.vip_type ?? "unknown"})`}
+                className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                  dark ? "bg-purple-900/40 text-purple-300" : "bg-purple-100 text-purple-700"
+                }`}
+              >
+                <Layers className="h-3 w-3" />
+                VIP
+              </span>
+            )}
+          </div>
+        );
+      },
     }),
     col.accessor("hostname", {
       header: "Hostname",
@@ -160,6 +179,36 @@ export default function IpamRecordsPage() {
     col.accessor("device_type", {
       header: "Device Type",
       cell: (info) => info.getValue() ?? "—",
+    }),
+    col.accessor("vip_type" as any, {
+      header: "VIP",
+      cell: (info) => {
+        const ip = info.row.original as IPAddress;
+        if (!ip.is_vip) return "—";
+        return (
+          <div className="space-y-1">
+            <Badge variant="default">{ip.vip_type ?? "VIP"}</Badge>
+            {ip.node_bindings && ip.node_bindings.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {ip.node_bindings.map((b) => (
+                  <span
+                    key={b.id ?? b.node_ip_id}
+                    title={`${b.role ?? "node"}: ${b.node_ip_address ?? b.node_ip_id}`}
+                    className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-mono text-[10px] ${
+                      dark ? "bg-gray-700 text-gray-300" : "bg-gray-100 text-gray-600"
+                    }`}
+                  >
+                    <span className={`font-sans font-semibold ${dark ? "text-purple-300" : "text-purple-700"}`}>
+                      {b.role ?? "node"}
+                    </span>
+                    {b.node_ip_address ?? b.node_ip_id}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      },
     }),
     col.accessor("subnet_cidr", {
       header: "Subnet",
@@ -494,6 +543,7 @@ export default function IpamRecordsPage() {
           subnets={subnets}
           vrfs={vrfs}
           tags={tags}
+          allIps={data}
           customFields={customFields.filter((f) =>
             (f.applies_to || "").split(",").map((s) => s.trim()).includes("ip_address")
           )}
@@ -700,6 +750,7 @@ function EditIpModal({
   subnets,
   vrfs,
   tags,
+  allIps = [],
   customFields,
   loading,
   onSubmit,
@@ -709,6 +760,7 @@ function EditIpModal({
   subnets: Subnet[];
   vrfs: VRF[];
   tags: Tag[];
+  allIps?: IPAddress[];
   customFields: CustomField[];
   loading: boolean;
   onSubmit: (data: IPAddressUpdate) => void;
@@ -739,9 +791,26 @@ function EditIpModal({
     ip.custom_fields ?? {}
   );
 
+  const [isVip, setIsVip] = useState<boolean>(ip.is_vip ?? false);
+  const [vipType, setVipType] = useState<string>(ip.vip_type ?? "");
+  const [nodeBindings, setNodeBindings] = useState<
+    { node_ip_id: string; role: string }[]
+  >(
+    (ip.node_bindings ?? []).map((b) => ({
+      node_ip_id: b.node_ip_id,
+      role: b.role ?? "primary",
+    }))
+  );
+  const [vipError, setVipError] = useState("");
+
+  const nodeCandidates = allIps.filter((i) => i.id !== ip.id);
+
   const set = (field: keyof typeof form) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
+
+  const updateNode = (idx: number, field: "node_ip_id" | "role", value: string) =>
+    setNodeBindings((prev) => prev.map((b, i) => (i === idx ? { ...b, [field]: value } : b)));
 
   const handleSubmit = () => {
     const data: IPAddressUpdate = {
@@ -757,6 +826,26 @@ function EditIpModal({
     if (form.subnet_id) data.subnet_id = form.subnet_id;
     if (form.vrf_id) data.vrf_id = form.vrf_id;
     else data.vrf_id = null;
+
+    if (isVip) {
+      if (!vipType) {
+        setVipError("VIP type is required for VIP addresses");
+        return;
+      }
+      data.is_vip = true;
+      data.vip_type = vipType as IPAddressUpdate["vip_type"];
+      data.node_bindings = nodeBindings
+        .filter((b) => b.node_ip_id)
+        .map((b) => ({
+          node_ip_id: b.node_ip_id,
+          role: b.role as "primary" | "backup" | "active" | "standby",
+        }));
+    } else {
+      data.is_vip = false;
+      data.vip_type = null;
+      data.node_bindings = [];
+    }
+
     onSubmit(data);
   };
 
@@ -850,6 +939,109 @@ function EditIpModal({
               ))}
             </select>
           </div>
+        </div>
+
+        <div className={`rounded-md border p-3 ${dark ? "border-gray-700" : "border-gray-200"}`}>
+          <label className="flex cursor-pointer items-center gap-2">
+            <input
+              type="checkbox"
+              checked={isVip}
+              onChange={(e) => {
+                setIsVip(e.target.checked);
+                if (!e.target.checked) setNodeBindings([]);
+              }}
+              className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+            />
+            <span className={`inline-flex items-center gap-1.5 text-sm font-medium ${dark ? "text-gray-200" : "text-gray-800"}`}>
+              <Layers className="h-4 w-4 text-purple-500" />
+              Virtual IP (VIP)
+            </span>
+          </label>
+
+          {isVip && (
+            <div className="mt-3 space-y-3">
+              <div>
+                <label className={labelCls(dark)}>VIP Type</label>
+                <select
+                  value={vipType}
+                  onChange={(e) => {
+                    setVipType(e.target.value);
+                    setVipError("");
+                  }}
+                  className={inputCls(dark)}
+                >
+                  <option value="">Select VIP type</option>
+                  {["keepalived", "carp_vrrp", "load_balancer", "kubernetes", "floating_cloud"].map(
+                    (t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    )
+                  )}
+                </select>
+                {vipError && <p className="mt-1 text-xs text-red-600">{vipError}</p>}
+              </div>
+
+              <div>
+                <div className="mb-1 flex items-center justify-between">
+                  <label className={labelCls(dark)}>Backing Node IPs</label>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setNodeBindings((prev) => [...prev, { node_ip_id: "", role: "primary" }])
+                    }
+                    className="inline-flex items-center gap-1 text-xs font-medium text-purple-600 hover:text-purple-700"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Add node
+                  </button>
+                </div>
+                {nodeBindings.length === 0 && (
+                  <p className={`text-xs ${dark ? "text-gray-500" : "text-gray-400"}`}>
+                    No backing nodes assigned.
+                  </p>
+                )}
+                <div className="space-y-2">
+                  {nodeBindings.map((b, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <select
+                        value={b.node_ip_id}
+                        onChange={(e) => updateNode(idx, "node_ip_id", e.target.value)}
+                        className={inputCls(dark)}
+                      >
+                        <option value="">Select node IP</option>
+                        {nodeCandidates.map((i) => (
+                          <option key={i.id} value={i.id}>
+                            {i.address}
+                            {i.hostname ? ` (${i.hostname})` : ""}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={b.role}
+                        onChange={(e) => updateNode(idx, "role", e.target.value)}
+                        className={`${inputCls(dark)} w-28 shrink-0`}
+                      >
+                        {["primary", "backup", "active", "standby"].map((r) => (
+                          <option key={r} value={r}>
+                            {r}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => setNodeBindings((prev) => prev.filter((_, i) => i !== idx))}
+                        className={`shrink-0 rounded p-1.5 ${dark ? "text-gray-400 hover:bg-gray-700 hover:text-red-400" : "text-gray-400 hover:bg-gray-100 hover:text-red-600"}`}
+                        title="Remove node"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div>
