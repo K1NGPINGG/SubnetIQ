@@ -13,6 +13,7 @@ import { useThemeStore } from "@/shared/lib/theme-store";
 import { cn } from "@/shared/lib/utils";
 import { useNavigate } from "react-router-dom";
 import GlobalSearch from "@/components/ui/GlobalSearch";
+import { Logo } from "@/components/ui/Logo";
 import { dashboardNav, navSections, type NavItem } from "@/components/layout/navConfig";
 
 const pageTitles: Record<string, string> = {
@@ -112,7 +113,7 @@ export default function Layout() {
             dark ? "border-gray-800" : "border-slate-200"
           )}
         >
-          {!collapsed && <img src="/logo.png" alt="SubnetIQ" className="h-10 w-auto" />}
+          {!collapsed && <Logo size={36} textClassName="text-lg font-semibold text-slate-900 dark:text-white" />}
           <button
             onClick={() => setCollapsed(!collapsed)}
             className={cn(

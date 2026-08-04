@@ -1,5 +1,6 @@
 import { useThemeStore } from "@/shared/lib/theme-store";
 import { Network, Shield, Globe, Radar, Box, Monitor, Table, Layers, Database } from "lucide-react";
+import { Logo } from "@/components/ui/Logo";
 
 const features = [
   {
@@ -64,7 +65,7 @@ export default function AboutPage() {
     <div className="space-y-8 max-w-4xl">
       <div>
         <div className="flex items-center gap-3 mb-2">
-          <img src="/logo.png" alt="SubnetIQ" className="h-12 w-auto" />
+          <Logo size={48} textClassName="text-xl font-semibold text-slate-900 dark:text-white" />
         </div>
         <p className={`text-sm leading-relaxed ${dark ? "text-gray-400" : "text-gray-600"}`}>
           SubnetIQ is an enterprise-grade IP Address Management (IPAM) platform designed for
@@ -126,7 +127,7 @@ export default function AboutPage() {
       <div className={`rounded-lg border p-4 ${dark ? "border-gray-700 bg-gray-800" : "border-gray-200 bg-white"}`}>
         <h2 className={`text-lg font-semibold mb-2 ${dark ? "text-white" : "text-gray-900"}`}>Version</h2>
         <p className={`text-sm ${dark ? "text-gray-400" : "text-gray-600"}`}>
-          SubnetIQ v1.3.2 &mdash; Built with modern open-source technologies.
+          SubnetIQ v1.3.3 &mdash; Built with modern open-source technologies.
         </p>
       </div>
     </div>

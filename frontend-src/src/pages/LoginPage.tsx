@@ -6,6 +6,7 @@ import { AlertCircle } from "lucide-react";
 import { useLogin } from "@/hooks/api";
 import { useAuthStore } from "@/shared/lib/auth-store";
 import { loginSchema } from "@/lib/validators";
+import { Logo } from "@/components/ui/Logo";
 import apiClient from "@/shared/lib/api-client";
 import type { LoginRequest, TokenResponse, UserInfo } from "@/types/api";
 
@@ -79,8 +80,8 @@ export default function LoginPage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-950 px-4">
         <div className="w-full max-w-md">
-          <div className="mb-8 text-center">
-            <img src="/logo.png" alt="SubnetIQ" className="mx-auto h-28 w-auto" />
+          <div className="mb-8 flex justify-center">
+            <Logo size={88} textClassName="text-3xl font-semibold text-white" />
           </div>
 
           <div className="rounded-xl border border-gray-700 bg-gray-900 p-8 shadow-lg">
@@ -154,8 +155,8 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-950 px-4">
       <div className="w-full max-w-md">
-        <div className="mb-8 text-center">
-          <img src="/logo.png" alt="SubnetIQ" className="mx-auto h-28 w-auto" />
+        <div className="mb-8 flex justify-center">
+          <Logo size={88} textClassName="text-3xl font-semibold text-white" />
         </div>
 
         <div className="rounded-xl border border-gray-700 bg-gray-900 p-8 shadow-lg">
