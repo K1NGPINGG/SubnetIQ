@@ -72,6 +72,12 @@ export default function HelpPage() {
       <Section title="What's New" defaultOpen>
         <div className="space-y-4">
           <div>
+            <h4 className="text-xs font-bold uppercase tracking-wide text-blue-600 dark:text-blue-400">v1.3.3</h4>
+            <ul className="list-disc list-inside space-y-1 ml-2 mt-1">
+              <li><strong>Brand refresh</strong> &mdash; a new geometric monogram built from interconnecting cyan and sapphire layers (abstracting the letters &ldquo;iq&rdquo; as a network mesh), paired with the SubnetIQ wordmark in Inter.</li>
+            </ul>
+          </div>
+          <div>
             <h4 className="text-xs font-bold uppercase tracking-wide text-blue-600 dark:text-blue-400">v1.3.0</h4>
             <ul className="list-disc list-inside space-y-1 ml-2 mt-1">
               <li><strong>Backup &amp; Restore</strong> &mdash; Full database backups via native PostgreSQL dump/restore, downloadable archives, a restore wizard, and automated daily backups with retention (Administration &rarr; Backups).</li>

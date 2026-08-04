@@ -5,6 +5,14 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.5] - 2026
+
+### Changed
+
+- **Refined brand logo** — the monogram was redrawn as a cleaner geometric network mesh:
+  interconnecting cyan and sapphire layers that abstractly form the letters "i" and "q"
+  with a single lightweight bridge (no heavy overlaps). Typography kept clean (Inter).
+
 ## [1.3.4] - 2026
 
 ### Fixed
@@ -267,6 +275,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Admin update feature** — check GitHub releases and automatically update the running stack.
 - **REST API** — full REST API with JWT authentication and MFA.
 
+[1.3.5]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.3.4...v1.3.5
 [1.3.4]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.3.3...v1.3.4
 [1.3.3]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.3.2...v1.3.3
 [1.3.2]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.3.1...v1.3.2

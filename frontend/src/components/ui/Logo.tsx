@@ -1,13 +1,14 @@
 import { cn } from "@/shared/lib/utils";
 
-const CYAN = "#22d3ee";
 const CYAN_LIGHT = "#67e8f9";
-const SAPPHIRE = "#3b82f6";
-const SAPPHIRE_DARK = "#2563eb";
+const CYAN = "#0891b2";
+const SAPPHIRE_LIGHT = "#60a5fa";
+const SAPPHIRE = "#1d4ed8";
 
 /**
- * Geometric SubnetIQ monogram: interconnecting cyan and sapphire layers that
- * form the letters "iq", paired with the wordmark in Inter.
+ * Geometric SubnetIQ monogram: a network-mesh made of interconnecting cyan and
+ * sapphire layers that abstractly form the letters "i" and "q", paired with the
+ * "SubnetIQ" wordmark in Inter.
  */
 export function Logo({
   size = 40,
@@ -32,8 +33,8 @@ export function Logo({
       >
         <defs>
           <linearGradient id="sniq-sapphire" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor={SAPPHIRE} />
-            <stop offset="100%" stopColor={SAPPHIRE_DARK} />
+            <stop offset="0%" stopColor={SAPPHIRE_LIGHT} />
+            <stop offset="100%" stopColor={SAPPHIRE} />
           </linearGradient>
           <linearGradient id="sniq-cyan" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor={CYAN_LIGHT} />
@@ -41,18 +42,39 @@ export function Logo({
           </linearGradient>
         </defs>
 
-        {/* "q" ring + tail (sapphire, back layer) */}
-        <circle cx="41" cy="31" r="12" stroke="url(#sniq-sapphire)" strokeWidth="11" />
+        {/* "q" ring + tail (sapphire mesh layer) */}
+        <circle cx="44" cy="32" r="11" stroke="url(#sniq-sapphire)" strokeWidth="3" />
         <path
-          d="M39 42 C 35 54, 52 61, 56 48"
+          d="M44 43 L44 52 Q44 56 50 54"
           stroke="url(#sniq-sapphire)"
-          strokeWidth="11"
+          strokeWidth="3"
           strokeLinecap="round"
         />
 
-        {/* "i" stem + dot (cyan, front layer) - overlaps the ring to interconnect */}
-        <rect x="14" y="26" width="12" height="32" rx="6" fill="url(#sniq-cyan)" />
-        <circle cx="20" cy="15" r="5.5" fill="url(#sniq-cyan)" />
+        {/* "i" stem (cyan mesh layer) */}
+        <line
+          x1="20"
+          y1="25"
+          x2="20"
+          y2="49"
+          stroke="url(#sniq-cyan)"
+          strokeWidth="3"
+          strokeLinecap="round"
+        />
+
+        {/* interconnection bridge between the "i" spine and the "q" ring */}
+        <line x1="20" y1="37" x2="33" y2="32" stroke="url(#sniq-cyan)" strokeWidth="2" />
+
+        {/* mesh nodes */}
+        <circle cx="20" cy="13" r="4.5" fill="url(#sniq-cyan)" />
+        <circle cx="20" cy="25" r="2" fill="url(#sniq-cyan)" />
+        <circle cx="20" cy="37" r="2" fill="url(#sniq-cyan)" />
+        <circle cx="20" cy="49" r="2" fill="url(#sniq-cyan)" />
+        <circle cx="33" cy="32" r="2" fill="url(#sniq-sapphire)" />
+        <circle cx="44" cy="21" r="2" fill="url(#sniq-sapphire)" />
+        <circle cx="55" cy="32" r="2" fill="url(#sniq-sapphire)" />
+        <circle cx="44" cy="43" r="2" fill="url(#sniq-sapphire)" />
+        <circle cx="50" cy="54" r="2" fill="url(#sniq-sapphire)" />
       </svg>
       {showText && (
         <span
