@@ -193,6 +193,21 @@ export interface SubnetTreeResponse {
   children: Subnet[];
 }
 
+export type VIPType =
+  | "keepalived"
+  | "carp_vrrp"
+  | "load_balancer"
+  | "kubernetes"
+  | "floating_cloud";
+
+export interface VIPNodeBinding {
+  id: string;
+  vip_id: string;
+  node_ip_id: string;
+  role: string | null;
+  node_ip_address: string | null;
+}
+
 export interface IPAddress {
   id: string;
   tenant_id: string;
@@ -208,6 +223,9 @@ export interface IPAddress {
   expires_at: string | null;
   vrf_id: string | null;
   family: number;
+  is_vip: boolean;
+  vip_type: VIPType | null;
+  node_bindings: VIPNodeBinding[] | null;
   tags: string[] | null;
   custom_fields: Record<string, unknown> | null;
   subnet_name?: string | null;
@@ -226,6 +244,9 @@ export interface IPAddressCreate {
   device_type?: string;
   description?: string;
   assigned_to?: string;
+  is_vip?: boolean;
+  vip_type?: VIPType | null;
+  node_bindings?: VIPNodeBindingCreate[];
 }
 
 export interface IPAddressUpdate {
@@ -238,8 +259,16 @@ export interface IPAddressUpdate {
   subnet_id?: string;
   vrf_id?: string;
   expires_at?: string;
+  is_vip?: boolean;
+  vip_type?: VIPType | null;
+  node_bindings?: VIPNodeBindingCreate[] | null;
   tags?: string[];
   custom_fields?: Record<string, unknown>;
+}
+
+export interface VIPNodeBindingCreate {
+  node_ip_id: string;
+  role: "primary" | "backup" | "active" | "standby";
 }
 
 export interface IPAllocationRequest {

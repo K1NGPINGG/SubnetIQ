@@ -9,7 +9,7 @@ from app.models.base import Base  # noqa: F401
 from app.models.custom_field import CustomField  # noqa: F401
 from app.models.custom_validation import CustomValidationRule  # noqa: F401
 from app.models.discovery import DiscoveryScan  # noqa: F401
-from app.models.ip_address import IPAddress  # noqa: F401
+from app.models.ip_address import IPAddress, VIPNodeBinding  # noqa: F401
 from app.models.ip_range import IPRange  # noqa: F401
 from app.models.rir import RIR  # noqa: F401
 from app.models.site import Site  # noqa: F401

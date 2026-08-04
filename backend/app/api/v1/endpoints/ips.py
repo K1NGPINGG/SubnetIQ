@@ -4,8 +4,9 @@ from datetime import UTC, datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.api.deps import get_current_active_user, validate_tenant_access
 from app.core.database import get_db
@@ -23,7 +24,7 @@ from app.core.validation import (
     get_fields_for,
     validate_custom_fields,
 )
-from app.models.ip_address import IPAddress
+from app.models.ip_address import IPAddress, VIPNodeBinding
 from app.models.subnet import Subnet
 from app.models.user import User
 from app.models.vrf import VRF
@@ -37,6 +38,39 @@ from app.schemas.ip_address import (
 )
 
 router = APIRouter()
+
+
+def _ip_with_bindings():
+    """Eager-load a VIP's node bindings and each node's address to avoid N+1."""
+    return selectinload(IPAddress.vip_bindings).selectinload(VIPNodeBinding.node_ip)
+
+
+async def _create_node_bindings(
+    db: AsyncSession,
+    ip: IPAddress,
+    bindings: list,
+    tenant_id: UUID,
+) -> None:
+    """Create VIPNodeBinding rows for a VIP, validating each node IP belongs to the tenant."""
+    for binding in bindings:
+        node_result = await db.execute(
+            select(IPAddress).where(
+                IPAddress.id == binding.node_ip_id,
+                IPAddress.tenant_id == tenant_id,
+            )
+        )
+        if node_result.scalar_one_or_none() is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Node IP {binding.node_ip_id} not found in your tenant",
+            )
+        db.add(
+            VIPNodeBinding(
+                vip_id=ip.id,
+                node_ip_id=binding.node_ip_id,
+                role=binding.role,
+            )
+        )
 
 
 @router.get("/records", response_model=list[IPAddressResponse], summary="List all IP records with tags, custom fields, and VRF")
@@ -56,6 +90,7 @@ async def list_ip_records(
         .join(Subnet, Subnet.id == IPAddress.subnet_id)
         .outerjoin(VRF, VRF.id == IPAddress.vrf_id)
         .where(IPAddress.tenant_id == tenant_id)
+        .options(_ip_with_bindings())
     )
 
     if subnet_id:
@@ -105,7 +140,7 @@ async def list_ips(
     current_user: User = Depends(get_current_active_user),
 ):
     """List all IP addresses for the current tenant with optional filtering."""
-    query = select(IPAddress).where(IPAddress.tenant_id == tenant_id)
+    query = select(IPAddress).where(IPAddress.tenant_id == tenant_id).options(_ip_with_bindings())
 
     if subnet_id:
         query = query.where(IPAddress.subnet_id == subnet_id)
@@ -199,11 +234,20 @@ async def create_ip(
         tenant_id=tenant_id,
         family=addr.version,
         custom_fields=custom_fields,
-        **ip_in.model_dump(exclude={"family", "custom_fields"}),
+        **ip_in.model_dump(exclude={"family", "custom_fields", "node_bindings"}),
     )
     db.add(ip)
     await db.flush()
-    await db.refresh(ip)
+
+    if ip_in.is_vip and ip_in.node_bindings:
+        await _create_node_bindings(db, ip, ip_in.node_bindings, tenant_id)
+        await db.flush()
+
+    # Re-query with bindings eagerly loaded so the response includes node info.
+    result = await db.execute(
+        select(IPAddress).where(IPAddress.id == ip.id).options(_ip_with_bindings())
+    )
+    ip = result.scalar_one()
 
     return IPAddressResponse.model_validate(ip)
 
@@ -268,7 +312,7 @@ async def allocate_ip(
     )
     db.add(ip)
     await db.flush()
-    await db.refresh(ip)
+    await db.refresh(ip, attribute_names=["vip_bindings"])
 
     return IPAddressResponse.model_validate(ip)
 
@@ -308,14 +352,14 @@ async def bulk_create_ips(
         ip = IPAddress(
             tenant_id=tenant_id,
             family=addr.version,
-            **ip_in.model_dump(exclude={"family"}),
+            **ip_in.model_dump(exclude={"family", "node_bindings"}),
         )
         db.add(ip)
         created_ips.append(ip)
 
     await db.flush()
     for ip in created_ips:
-        await db.refresh(ip)
+        await db.refresh(ip, attribute_names=["vip_bindings"])
 
     return [IPAddressResponse.model_validate(ip) for ip in created_ips]
 
@@ -329,7 +373,9 @@ async def get_ip(
 ):
     """Get a specific IP address within the current tenant."""
     result = await db.execute(
-        select(IPAddress).where(IPAddress.id == ip_id, IPAddress.tenant_id == tenant_id)
+        select(IPAddress)
+        .where(IPAddress.id == ip_id, IPAddress.tenant_id == tenant_id)
+        .options(_ip_with_bindings())
     )
     ip = result.scalar_one_or_none()
     if ip is None:
@@ -346,10 +392,12 @@ async def get_ip_by_address(
 ):
     """Get a specific IP address by its address value."""
     result = await db.execute(
-        select(IPAddress).where(
+        select(IPAddress)
+        .where(
             IPAddress.tenant_id == tenant_id,
             IPAddress.address == address,
         )
+        .options(_ip_with_bindings())
     )
     ip = result.scalar_one_or_none()
     if ip is None:
@@ -374,6 +422,8 @@ async def update_ip(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="IP address not found")
 
     update_data = ip_in.model_dump(exclude_unset=True)
+    bindings_provided = "node_bindings" in update_data
+    new_bindings = update_data.pop("node_bindings", None)
 
     # Validate custom fields and validation rules against merged state
     try:
@@ -399,9 +449,23 @@ async def update_ip(
     for field, value in update_data.items():
         setattr(ip, field, value)
 
+    # Manage VIP node bindings: replace them when provided, clear them when the
+    # record is being demoted to a non-VIP.
+    if update_data.get("is_vip") is False:
+        await db.execute(delete(VIPNodeBinding).where(VIPNodeBinding.vip_id == ip.id))
+    elif bindings_provided:
+        await db.execute(delete(VIPNodeBinding).where(VIPNodeBinding.vip_id == ip.id))
+        if new_bindings:
+            await _create_node_bindings(db, ip, new_bindings, tenant_id)
+
     db.add(ip)
     await db.flush()
-    await db.refresh(ip)
+
+    # Re-query with bindings eagerly loaded for the response.
+    result = await db.execute(
+        select(IPAddress).where(IPAddress.id == ip.id).options(_ip_with_bindings())
+    )
+    ip = result.scalar_one()
 
     return IPAddressResponse.model_validate(ip)
 

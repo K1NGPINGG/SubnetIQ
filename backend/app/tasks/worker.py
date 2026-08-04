@@ -304,6 +304,10 @@ async def _run_discovery_scan_async(scan_id: str):
                     host_entry["db_status"] = db_record.status
                     host_entry["db_device_type"] = db_record.device_type
                     host_entry["db_assigned_to"] = db_record.assigned_to
+                    # Discovery only *reports* VIP status; it never writes back to
+                    # IP records, so a VIP's node bindings are always preserved.
+                    host_entry["is_vip"] = bool(db_record.is_vip)
+                    host_entry["vip_type"] = db_record.vip_type
                     # Prefer DNS/scan hostname, fall back to DB hostname
                     if not host_entry["hostname"] and db_record.hostname:
                         host_entry["hostname"] = db_record.hostname

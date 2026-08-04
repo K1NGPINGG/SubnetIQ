@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -12,6 +12,7 @@ from app.models.base import Base, TenantMixin, TimestampMixin, UUIDPrimaryKeyMix
 
 if TYPE_CHECKING:
     from app.models.approval import ApprovalRequest
+    from app.models.ip_address import VIPNodeBinding
     from app.models.subnet import Subnet
     from app.models.tenant import Tenant
     from app.models.vrf import VRF
@@ -34,6 +35,10 @@ class IPAddress(Base, UUIDPrimaryKeyMixin, TimestampMixin, TenantMixin):
 
     # Address family: 4 for IPv4, 6 for IPv6
     family: Mapped[int] = mapped_column(Integer, nullable=False, default=4)
+
+    # Virtual IP (VIP) inventory
+    is_vip: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    vip_type: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
     # Tags and custom field values (JSONB)
     tags: Mapped[list | None] = mapped_column(JSONB, nullable=True)
@@ -63,6 +68,53 @@ class IPAddress(Base, UUIDPrimaryKeyMixin, TimestampMixin, TenantMixin):
         back_populates="ip_address",
         cascade="all, delete-orphan",
     )
+    # VIP -> backing node IPs (1:N). A VIP is the ``vip`` side; the underlying
+    # physical/virtual host records are the ``node_ip`` side.
+    vip_bindings: Mapped[list["VIPNodeBinding"]] = relationship(
+        back_populates="vip",
+        cascade="all, delete-orphan",
+        foreign_keys="VIPNodeBinding.vip_id",
+    )
+    # A regular IP can act as a backing node for one or more VIPs.
+    node_bindings_as_node: Mapped[list["VIPNodeBinding"]] = relationship(
+        back_populates="node_ip",
+        cascade="all, delete-orphan",
+        foreign_keys="VIPNodeBinding.node_ip_id",
+    )
 
     def __repr__(self) -> str:
         return f"<IPAddress(id={self.id}, address={self.address}, status={self.status})>"
+
+
+class VIPNodeBinding(Base, UUIDPrimaryKeyMixin):
+    """Association between a Virtual IP and one of its backing node IPs (1:N)."""
+
+    __tablename__ = "vip_node_bindings"
+
+    vip_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("ip_addresses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    node_ip_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("ip_addresses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    # e.g. "primary", "backup", "active", "standby"
+    role: Mapped[str | None] = mapped_column(String(20), nullable=True)
+
+    vip: Mapped["IPAddress"] = relationship(
+        back_populates="vip_bindings",
+        foreign_keys=[vip_id],
+    )
+    node_ip: Mapped["IPAddress"] = relationship(
+        back_populates="node_bindings_as_node",
+        foreign_keys=[node_ip_id],
+    )
+
+    @property
+    def node_ip_address(self) -> str | None:
+        return self.node_ip.address if self.node_ip else None

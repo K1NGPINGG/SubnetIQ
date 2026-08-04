@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Pencil, Trash2, Search, Wifi, WifiOff, RefreshCw, Download, Check, Edit } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Wifi, WifiOff, RefreshCw, Download, Check, Edit, Layers, X } from "lucide-react";
 import { createColumnHelper } from "@tanstack/react-table";
 import {
   useIpAddresses,
@@ -300,6 +300,7 @@ export default function IpsPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [subnetFilter, setSubnetFilter] = useState("");
+  const [vipFilter, setVipFilter] = useState<"all" | "static" | "vip">("all");
   const [viewMode, setViewMode] = useState<"db" | "scan">("db");
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
@@ -328,7 +329,9 @@ export default function IpsPage() {
       (ip.hostname ?? "").toLowerCase().includes(search.toLowerCase());
     const matchesStatus = !statusFilter || ip.status === statusFilter;
     const matchesSubnet = !subnetFilter || ip.subnet_id === subnetFilter;
-    return matchesSearch && matchesStatus && matchesSubnet;
+    const matchesVip =
+      vipFilter === "all" || (vipFilter === "vip" ? ip.is_vip : !ip.is_vip);
+    return matchesSearch && matchesStatus && matchesSubnet && matchesVip;
   });
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / pagination.pageSize));
@@ -376,9 +379,66 @@ export default function IpsPage() {
     }),
     col.accessor("address", {
       header: "IP Address",
-      cell: (info) => (
-        <span className={`font-mono font-medium ${dark ? "text-white" : "text-gray-900"}`}>{info.getValue()}</span>
-      ),
+      cell: (info) => {
+        const ip = info.row.original as IPAddress;
+        return (
+          <div className="flex items-center gap-2">
+            <span className={`font-mono font-medium ${dark ? "text-white" : "text-gray-900"}`}>
+              {info.getValue()}
+            </span>
+            {ip.is_vip && (
+              <span
+                title={`Virtual IP (${ip.vip_type ?? "unknown"})`}
+                className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                  dark
+                    ? "bg-purple-900/40 text-purple-300"
+                    : "bg-purple-100 text-purple-700"
+                }`}
+              >
+                <Layers className="h-3 w-3" />
+                VIP
+              </span>
+            )}
+          </div>
+        );
+      },
+    }),
+    col.accessor("vip_type" as any, {
+      header: "VIP Type",
+      cell: (info) => {
+        const ip = info.row.original as IPAddress;
+        if (!ip.is_vip || !ip.vip_type) return "—";
+        return (
+          <Badge variant="default">{ip.vip_type}</Badge>
+        );
+      },
+    }),
+    col.accessor("node_bindings" as any, {
+      header: "VIP Nodes",
+      cell: (info) => {
+        const ip = info.row.original as IPAddress;
+        if (!ip.is_vip || !ip.node_bindings || ip.node_bindings.length === 0) return "—";
+        return (
+          <div className="flex flex-wrap gap-1">
+            {ip.node_bindings.map((b) => (
+              <span
+                key={b.id ?? b.node_ip_id}
+                title={`${b.role ?? "node"}: ${b.node_ip_address ?? b.node_ip_id}`}
+                className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-mono text-[10px] ${
+                  dark
+                    ? "bg-gray-700 text-gray-300"
+                    : "bg-gray-100 text-gray-600"
+                }`}
+              >
+                <span className={`font-sans font-semibold ${dark ? "text-purple-300" : "text-purple-700"}`}>
+                  {b.role ?? "node"}
+                </span>
+                {b.node_ip_address ?? b.node_ip_id}
+              </span>
+            ))}
+          </div>
+        );
+      },
     }),
     col.accessor("hostname", {
       header: "Hostname",
@@ -525,6 +585,32 @@ export default function IpsPage() {
               <option value="available">Available</option>
               <option value="unavailable">Unavailable</option>
             </select>
+            <div className={`flex overflow-hidden rounded-md border text-sm ${dark ? "border-gray-600" : "border-gray-300"}`}>
+              {(
+                [
+                  { value: "all", label: "All IPs" },
+                  { value: "static", label: "Static IPs" },
+                  { value: "vip", label: "VIPs Only" },
+                ] as const
+              ).map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => {
+                    setVipFilter(opt.value);
+                    setPagination((p) => ({ ...p, pageIndex: 0 }));
+                  }}
+                  className={`px-3 py-2 text-sm font-medium transition-colors ${
+                    vipFilter === opt.value
+                      ? "bg-blue-600 text-white"
+                      : dark
+                        ? "bg-gray-800 text-gray-300 hover:bg-gray-700"
+                        : "bg-white text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           </>
         )}
 
@@ -603,6 +689,7 @@ export default function IpsPage() {
             createMutation.mutate(d, { onSuccess: () => setCreateOpen(false) })
           }
           subnets={subnets}
+          allIps={data}
           loading={createMutation.isPending}
           mode="create"
         />
@@ -619,6 +706,8 @@ export default function IpsPage() {
             )
           }
           subnets={subnets}
+          allIps={data}
+          excludeIpId={editItem.id}
           loading={updateMutation.isPending}
           mode="edit"
           defaultValues={{
@@ -629,6 +718,12 @@ export default function IpsPage() {
             description: editItem.description ?? "",
             assigned_to: editItem.assigned_to ?? "",
             subnet_id: editItem.subnet_id,
+            is_vip: editItem.is_vip ?? false,
+            vip_type: (editItem.vip_type as any) ?? undefined,
+            node_bindings: (editItem.node_bindings ?? []).map((b) => ({
+              node_ip_id: b.node_ip_id,
+              role: (b.role as any) ?? "primary",
+            })),
           }}
         />
       )}
@@ -779,6 +874,8 @@ function IpFormModal({
   onClose,
   onSubmit,
   subnets,
+  allIps = [],
+  excludeIpId,
   loading,
   mode,
   defaultValues,
@@ -787,6 +884,8 @@ function IpFormModal({
   onClose: () => void;
   onSubmit: (data: any) => void;
   subnets: Subnet[];
+  allIps?: IPAddress[];
+  excludeIpId?: string;
   loading: boolean;
   mode: "create" | "edit";
   defaultValues?: any;
@@ -798,14 +897,46 @@ function IpFormModal({
   const {
     register,
     handleSubmit,
+    control,
+    setValue,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(schema),
     defaultValues: defaultValues ?? {},
   });
 
+  const isVip = useWatch({ control, name: "is_vip", defaultValue: false });
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "node_bindings",
+  });
+
+  const nodeCandidates = allIps.filter((ip) => ip.id !== excludeIpId);
+
   const inputClass = `w-full rounded-md border px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${dark ? "border-gray-600 bg-gray-700 text-white" : "border-gray-300"}`;
   const labelClass = `mb-1 block text-sm font-medium ${dark ? "text-gray-300" : "text-gray-700"}`;
+
+  const vipTypes = [
+    "keepalived",
+    "carp_vrrp",
+    "load_balancer",
+    "kubernetes",
+    "floating_cloud",
+  ];
+  const nodeRoles = ["primary", "backup", "active", "standby"];
+
+  const handleFormSubmit = handleSubmit((data) => {
+    const cleaned: any = { ...data };
+    if (!cleaned.is_vip) {
+      cleaned.vip_type = null;
+      cleaned.node_bindings = [];
+    } else {
+      cleaned.node_bindings = (cleaned.node_bindings ?? []).filter(
+        (b: any) => b?.node_ip_id
+      );
+    }
+    onSubmit(cleaned);
+  });
 
   return (
     <Modal
@@ -831,7 +962,7 @@ function IpFormModal({
         </>
       }
     >
-      <form id="ip-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form id="ip-form" onSubmit={handleFormSubmit} className="space-y-4">
         {mode === "create" && (
           <>
             <div>
@@ -902,6 +1033,108 @@ function IpFormModal({
         <div>
           <label className={labelClass}>Assigned To</label>
           <input {...register("assigned_to")} className={inputClass} />
+        </div>
+
+        {/* VIP configuration */}
+        <div className={`rounded-md border p-3 ${dark ? "border-gray-700" : "border-gray-200"}`}>
+          <label className="flex cursor-pointer items-center gap-2">
+            <input
+              type="checkbox"
+              checked={!!isVip}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                setValue("is_vip", checked, { shouldValidate: true });
+                if (!checked) setValue("node_bindings", []);
+              }}
+              className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+            />
+            <span className={`inline-flex items-center gap-1.5 text-sm font-medium ${dark ? "text-gray-200" : "text-gray-800"}`}>
+              <Layers className="h-4 w-4 text-purple-500" />
+              Virtual IP (VIP)
+            </span>
+          </label>
+
+          {isVip && (
+            <div className="mt-3 space-y-3">
+              <div>
+                <label className={labelClass}>VIP Type</label>
+                <select {...register("vip_type")} className={inputClass}>
+                  <option value="">Select VIP type</option>
+                  {vipTypes.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+                {errors.vip_type && (
+                  <p className="mt-1 text-xs text-red-600">
+                    {errors.vip_type?.message as string}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <div className="mb-1 flex items-center justify-between">
+                  <label className={labelClass}>Backing Node IPs</label>
+                  <button
+                    type="button"
+                    onClick={() => append({ node_ip_id: "", role: "primary" })}
+                    className="inline-flex items-center gap-1 text-xs font-medium text-purple-600 hover:text-purple-700"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Add node
+                  </button>
+                </div>
+                {fields.length === 0 && (
+                  <p className={`text-xs ${dark ? "text-gray-500" : "text-gray-400"}`}>
+                    No backing nodes assigned.
+                  </p>
+                )}
+                <div className="space-y-2">
+                  {fields.map((field, index) => (
+                    <div key={field.id} className="flex items-center gap-2">
+                      <select
+                        {...register(`node_bindings.${index}.node_ip_id`)}
+                        className={inputClass}
+                      >
+                        <option value="">Select node IP</option>
+                        {nodeCandidates.map((ip) => (
+                          <option key={ip.id} value={ip.id}>
+                            {ip.address}
+                            {ip.hostname ? ` (${ip.hostname})` : ""}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        {...register(`node_bindings.${index}.role`)}
+                        className={`${inputClass} w-28 shrink-0`}
+                      >
+                        {nodeRoles.map((r) => (
+                          <option key={r} value={r}>
+                            {r}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => remove(index)}
+                        className={`shrink-0 rounded p-1.5 ${dark ? "text-gray-400 hover:bg-gray-700 hover:text-red-400" : "text-gray-400 hover:bg-gray-100 hover:text-red-600"}`}
+                        title="Remove node"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                {errors.node_bindings && (
+                  <p className="mt-1 text-xs text-red-600">
+                    {(errors.node_bindings as any)?.message ??
+                      "One or more node bindings are invalid"}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </form>
     </Modal>

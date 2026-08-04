@@ -132,50 +132,102 @@ export const subnetUpdateSchema = z.object({
   parent_subnet_id: z.string().uuid().optional().nullable(),
 });
 
-export const ipAddressCreateSchema = z.object({
-  address: z
-    .string()
-    .regex(/^(\d{1,3}\.){3}\d{1,3}$/, "Invalid IP address"),
-  subnet_id: z.string().uuid("Invalid subnet ID"),
-  hostname: z.string().max(255).optional().or(z.literal("")),
-  status: z
-    .enum(["allocated", "reserved", "available", "unavailable"], {
-      errorMap: () => ({ message: "Invalid status" }),
-    })
-    .optional(),
-  mac_address: z
-    .string()
-    .regex(
-      /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/,
-      "Invalid MAC address format"
-    )
-    .optional()
-    .or(z.literal("")),
-  device_type: z.string().max(100).optional().or(z.literal("")),
-  description: z.string().max(500).optional().or(z.literal("")),
-  assigned_to: z.string().max(255).optional().or(z.literal("")),
+export const vipTypeSchema = z.enum([
+  "keepalived",
+  "carp_vrrp",
+  "load_balancer",
+  "kubernetes",
+  "floating_cloud",
+]);
+
+export const vipNodeBindingSchema = z.object({
+  node_ip_id: z.string().uuid("Invalid node IP"),
+  role: z.enum(["primary", "backup", "active", "standby"]),
 });
 
-export const ipAddressUpdateSchema = z.object({
-  hostname: z.string().max(255).optional().or(z.literal("")),
-  status: z
-    .enum(["allocated", "reserved", "available", "unavailable"])
-    .optional(),
-  mac_address: z
-    .string()
-    .regex(/^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/)
-    .optional()
-    .or(z.literal("")),
-  device_type: z.string().max(100).optional().or(z.literal("")),
-  description: z.string().max(500).optional().or(z.literal("")),
-  assigned_to: z.string().max(255).optional().or(z.literal("")),
-  subnet_id: z.string().uuid().optional(),
-  expires_at: z
-    .string()
-    .datetime("Invalid datetime format")
-    .optional()
-    .nullable(),
-});
+const vipConsistencyCheck = (
+  val: { is_vip?: boolean; vip_type?: string | null; node_bindings?: unknown },
+  ctx: z.RefinementCtx,
+) => {
+  const bindings = Array.isArray(val.node_bindings) ? val.node_bindings : [];
+  if (!val.is_vip) {
+    if (val.vip_type) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["vip_type"],
+        message: "VIP type is only allowed when this address is a VIP",
+      });
+    }
+    if (bindings.length > 0) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["node_bindings"],
+        message: "Node bindings are only allowed when this address is a VIP",
+      });
+    }
+  } else if (!val.vip_type) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["vip_type"],
+      message: "VIP type is required for VIP addresses",
+    });
+  }
+};
+
+export const ipAddressCreateSchema = z
+  .object({
+    address: z
+      .string()
+      .regex(/^(\d{1,3}\.){3}\d{1,3}$/, "Invalid IP address"),
+    subnet_id: z.string().uuid("Invalid subnet ID"),
+    hostname: z.string().max(255).optional().or(z.literal("")),
+    status: z
+      .enum(["allocated", "reserved", "available", "unavailable"], {
+        errorMap: () => ({ message: "Invalid status" }),
+      })
+      .optional(),
+    mac_address: z
+      .string()
+      .regex(
+        /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/,
+        "Invalid MAC address format"
+      )
+      .optional()
+      .or(z.literal("")),
+    device_type: z.string().max(100).optional().or(z.literal("")),
+    description: z.string().max(500).optional().or(z.literal("")),
+    assigned_to: z.string().max(255).optional().or(z.literal("")),
+    is_vip: z.boolean().optional().default(false),
+    vip_type: vipTypeSchema.optional().nullable(),
+    node_bindings: z.array(vipNodeBindingSchema).optional().nullable(),
+  })
+  .superRefine(vipConsistencyCheck);
+
+export const ipAddressUpdateSchema = z
+  .object({
+    hostname: z.string().max(255).optional().or(z.literal("")),
+    status: z
+      .enum(["allocated", "reserved", "available", "unavailable"])
+      .optional(),
+    mac_address: z
+      .string()
+      .regex(/^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/)
+      .optional()
+      .or(z.literal("")),
+    device_type: z.string().max(100).optional().or(z.literal("")),
+    description: z.string().max(500).optional().or(z.literal("")),
+    assigned_to: z.string().max(255).optional().or(z.literal("")),
+    subnet_id: z.string().uuid().optional(),
+    expires_at: z
+      .string()
+      .datetime("Invalid datetime format")
+      .optional()
+      .nullable(),
+    is_vip: z.boolean().optional(),
+    vip_type: vipTypeSchema.optional().nullable(),
+    node_bindings: z.array(vipNodeBindingSchema).optional().nullable(),
+  })
+  .superRefine(vipConsistencyCheck);
 
 export const ipAllocationSchema = z.object({
   subnet_id: z.string().uuid("Invalid subnet ID"),
