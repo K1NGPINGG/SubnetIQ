@@ -22,6 +22,7 @@ from app.api.v1.endpoints import (
     sites,
     snmp_credentials,
     subnets,
+    system_backups,
     system_logs,
     tags,
     tenants,
@@ -51,6 +52,7 @@ api_router.include_router(assets.router, prefix="/assets", tags=["Assets"])
 api_router.include_router(reports.router, prefix="/reports", tags=["Reports"])
 api_router.include_router(admin.router, prefix="/admin", tags=["Admin"])
 api_router.include_router(update.router, prefix="/admin/update", tags=["Admin"])
+api_router.include_router(system_backups.router, prefix="/system/backups", tags=["Backups"])
 api_router.include_router(snmp_credentials.router, prefix="/snmp-credentials", tags=["SNMP Credentials"])
 api_router.include_router(winrm_credentials.router, prefix="/winrm-credentials", tags=["WinRM Credentials"])
 api_router.include_router(audit.router, prefix="/audit", tags=["Audit Logs"])

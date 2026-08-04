@@ -72,6 +72,7 @@ export default function App() {
         <Route path="admin/webhooks" element={<WebhooksPage />} />
         <Route path="admin/integrations" element={<AdminPage />} />
         <Route path="admin/update" element={<AdminPage />} />
+        <Route path="admin/backups" element={<AdminPage />} />
         <Route path="admin/audit" element={<AuditLogPage />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="about" element={<AboutPage />} />

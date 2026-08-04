@@ -16,6 +16,10 @@ import {
   Key,
   Globe,
   Wifi,
+  Database,
+  Upload,
+  Download,
+  AlertTriangle,
 } from "lucide-react";
 import { createColumnHelper } from "@tanstack/react-table";
 import {
@@ -26,6 +30,11 @@ import {
   useUpdateStatus,
   useRunUpdate,
   useCheckUpdate,
+  useBackups,
+  useCreateBackup,
+  useDeleteBackup,
+  useRestoreBackup,
+  downloadBackup,
 } from "@/hooks/api";
 import { adminUserCreateSchema, adminUserUpdateSchema } from "@/lib/validators";
 import { DataTable } from "@/components/ui/DataTable";
@@ -41,7 +50,7 @@ import WinrmProfilesPage from "@/pages/WinrmProfilesPage";
 
 const userCol = createColumnHelper<User>();
 
-type Tab = "users" | "integrations" | "snmp" | "winrm" | "update";
+type Tab = "users" | "integrations" | "snmp" | "winrm" | "update" | "backups";
 
 // ── Integration settings state ───────────────────────────────────────
 
@@ -115,6 +124,7 @@ export default function AdminPage() {
   else if (path.includes("/admin/winrm")) activeTab = "winrm";
   else if (path.includes("/admin/integrations")) activeTab = "integrations";
   else if (path.includes("/admin/update")) activeTab = "update";
+  else if (path.includes("/admin/backups")) activeTab = "backups";
 
   return (
     <div className="space-y-4">
@@ -123,6 +133,7 @@ export default function AdminPage() {
       {activeTab === "winrm" && <WinrmTab />}
       {activeTab === "integrations" && <IntegrationsTab />}
       {activeTab === "update" && <UpdateTab />}
+      {activeTab === "backups" && <BackupsTab />}
     </div>
   );
 }
@@ -1112,6 +1123,266 @@ function UpdateTab() {
           {data?.log_tail ? formatUkTimestampsInText(data.log_tail) : "No log output yet."}
         </pre>
       </div>
+    </div>
+  );
+}
+
+// ── Backups Tab ────────────────────────────────────────────────────────────
+
+function BackupsTab() {
+  const dark = useThemeStore((s) => s.dark);
+  const { data: backups = [], isLoading, refetch } = useBackups();
+  const createBackup = useCreateBackup();
+  const deleteBackup = useDeleteBackup();
+  const restoreBackup = useRestoreBackup();
+  const [restoreFile, setRestoreFile] = useState<File | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
+  const [downloading, setDownloading] = useState<string | null>(null);
+
+  const cardClass = `rounded-lg border p-5 ${dark ? "border-gray-700 bg-gray-800" : "border-gray-200 bg-white"}`;
+  const labelClass = `mb-1 block text-sm font-medium ${dark ? "text-gray-300" : "text-gray-700"}`;
+  const inputClass = `w-full rounded-md border px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${dark ? "border-gray-600 bg-gray-700 text-white" : "border-gray-300"}`;
+
+  const fmtSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  };
+
+  const handleRestore = () => {
+    if (!restoreFile || confirmText !== "CONFIRM") return;
+    restoreBackup.mutate(restoreFile, {
+      onSuccess: () => {
+        setRestoreFile(null);
+        setConfirmText("");
+        setConfirmOpen(false);
+      },
+    });
+  };
+
+  const handleDownload = async (filename: string) => {
+    setDownloading(filename);
+    try {
+      await downloadBackup(filename);
+    } finally {
+      setDownloading(null);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className={cardClass}>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h3 className={`text-lg font-semibold ${dark ? "text-white" : "text-gray-900"}`}>
+              Backup &amp; Restore
+            </h3>
+            <p className={`mt-1 text-sm ${dark ? "text-gray-400" : "text-gray-500"}`}>
+              Create full database backups, restore from an archive, and manage stored backups.
+              Automated backups run daily (retention of 7 days).
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => refetch()}
+              className={`inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${dark ? "border-gray-600 text-gray-300 hover:bg-gray-700" : "border-gray-300 text-gray-700 hover:bg-gray-50"}`}
+            >
+              <RefreshCw className="h-4 w-4" />
+              Refresh
+            </button>
+            <button
+              onClick={() => createBackup.mutate()}
+              disabled={createBackup.isPending}
+              className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            >
+              <Database className="h-4 w-4" />
+              {createBackup.isPending ? "Creating..." : "Create Backup Now"}
+            </button>
+          </div>
+        </div>
+        {createBackup.isSuccess && (
+          <p className={`mt-3 text-xs ${dark ? "text-gray-400" : "text-gray-500"}`}>
+            Backup started - it will appear in the history below shortly.
+          </p>
+        )}
+        {createBackup.isError && (
+          <p className="mt-3 text-xs text-red-600">
+            Failed to start backup: {(createBackup.error as Error)?.message ?? "Unknown error"}
+          </p>
+        )}
+      </div>
+
+      <div className={cardClass}>
+        <h4 className={`text-sm font-semibold ${dark ? "text-white" : "text-gray-900"}`}>
+          Upload &amp; Restore
+        </h4>
+        <label
+          className={`mt-3 flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 text-center text-sm transition-colors ${
+            dark
+              ? "border-gray-600 text-gray-400 hover:border-blue-500 hover:text-blue-300"
+              : "border-gray-300 text-gray-500 hover:border-blue-400 hover:text-blue-600"
+          }`}
+        >
+          <Upload className="mb-2 h-8 w-8" />
+          {restoreFile ? (
+            <span className={`font-medium ${dark ? "text-gray-200" : "text-gray-700"}`}>
+              {restoreFile.name}
+            </span>
+          ) : (
+            <span>Drag &amp; drop a .tar.gz backup here, or click to browse</span>
+          )}
+          <input
+            type="file"
+            accept=".tar.gz,.dump"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) setRestoreFile(f);
+            }}
+          />
+        </label>
+        {restoreFile && (
+          <div className={`mt-3 flex items-center justify-between gap-3 rounded-md border p-3 ${dark ? "border-amber-700 bg-amber-900/20" : "border-amber-200 bg-amber-50"}`}>
+            <p className={`text-xs ${dark ? "text-amber-300" : "text-amber-800"}`}>
+              <AlertTriangle className="mr-1 inline h-3.5 w-3.5" />
+              Restoring will overwrite existing data and cannot be undone.
+            </p>
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                onClick={() => setRestoreFile(null)}
+                className="rounded-md border px-3 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => setConfirmOpen(true)}
+                disabled={restoreBackup.isPending}
+                className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {restoreBackup.isPending ? "Restoring..." : "Restore"}
+              </button>
+            </div>
+          </div>
+        )}
+        {restoreBackup.isError && (
+          <p className="mt-2 text-xs text-red-600">
+            Restore failed: {(restoreBackup.error as Error)?.message ?? "Unknown error"}
+          </p>
+        )}
+        {restoreBackup.isSuccess && (
+          <p className="mt-2 text-xs text-green-600">Restore task started successfully.</p>
+        )}
+      </div>
+
+      <div className={cardClass}>
+        <h4 className={`text-sm font-semibold ${dark ? "text-white" : "text-gray-900"}`}>
+          Backup History
+        </h4>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-10 text-sm text-gray-400">
+            Loading backups...
+          </div>
+        ) : backups.length === 0 ? (
+          <div className="py-10 text-center text-sm text-gray-400">No backups created yet.</div>
+        ) : (
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className={`border-b text-xs uppercase tracking-wide ${dark ? "border-gray-700 text-gray-400" : "border-gray-200 text-gray-500"}`}>
+                  <th className="px-2 py-2 font-medium">Filename</th>
+                  <th className="px-2 py-2 font-medium">Size</th>
+                  <th className="px-2 py-2 font-medium">Created</th>
+                  <th className="px-2 py-2 font-medium">Type</th>
+                  <th className="px-2 py-2 text-right font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {backups.map((b) => (
+                  <tr key={b.filename} className={`border-b ${dark ? "border-gray-800" : "border-gray-100"}`}>
+                    <td className={`px-2 py-2 font-mono text-xs ${dark ? "text-gray-200" : "text-gray-700"}`}>{b.filename}</td>
+                    <td className="px-2 py-2 text-xs">{fmtSize(b.size)}</td>
+                    <td className="px-2 py-2 text-xs">{formatUkDateTime(b.created_at)}</td>
+                    <td className="px-2 py-2">
+                      <Badge variant={b.kind === "manual" ? "info" : "default"}>{b.kind}</Badge>
+                    </td>
+                    <td className="px-2 py-2">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => handleDownload(b.filename)}
+                          disabled={downloading === b.filename}
+                          className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium ${
+                            dark ? "border-gray-600 text-gray-300 hover:bg-gray-700" : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                          }`}
+                          title="Download"
+                        >
+                          <Download className="h-3 w-3" />
+                          {downloading === b.filename ? "..." : "Download"}
+                        </button>
+                        <button
+                          onClick={() => deleteBackup.mutate(b.filename)}
+                          disabled={deleteBackup.isPending}
+                          className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium ${
+                            dark ? "border-gray-600 text-gray-300 hover:bg-red-900/30 hover:text-red-400" : "border-gray-300 text-gray-700 hover:bg-red-50 hover:text-red-600"
+                          }`}
+                          title="Delete"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {confirmOpen && restoreFile && (
+        <Modal
+          open
+          onClose={() => setConfirmOpen(false)}
+          title="Restore Backup"
+          footer={
+            <>
+              <button
+                onClick={() => setConfirmOpen(false)}
+                className={`rounded-md border px-4 py-2 text-sm font-medium ${dark ? "border-gray-600 text-gray-300 hover:bg-gray-700" : "border-gray-300 text-gray-700 hover:bg-gray-50"}`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRestore}
+                disabled={confirmText !== "CONFIRM" || restoreBackup.isPending}
+                className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {restoreBackup.isPending ? "Restoring..." : "Restore"}
+              </button>
+            </>
+          }
+        >
+          <div className="space-y-3">
+            <p className={`flex items-start gap-2 text-sm ${dark ? "text-amber-300" : "text-amber-800"}`}>
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              Warning: Restoring will overwrite existing data. This action cannot be undone.
+            </p>
+            <div>
+              <label className={labelClass}>Type CONFIRM to proceed</label>
+              <input
+                value={confirmText}
+                onChange={(e) => setConfirmText(e.target.value)}
+                placeholder="CONFIRM"
+                className={inputClass}
+              />
+            </div>
+            <p className={`text-xs ${dark ? "text-gray-400" : "text-gray-500"}`}>
+              Restoring: <span className="font-mono">{restoreFile.name}</span>
+            </p>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

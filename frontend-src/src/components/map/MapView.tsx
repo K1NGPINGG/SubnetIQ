@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { MapContainer, TileLayer, Marker, Tooltip, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useThemeStore } from "@/shared/lib/theme-store";
@@ -44,7 +44,7 @@ function TileSwitcher({ dark }: { dark: boolean }) {
       }
     });
     const url = dark ? darkTileUrl : lightTileUrl;
-    L.tileLayer(url, { attribution: tileAttribution, maxZoom: 19 }).addTo(map);
+    L.tileLayer(url, { attribution: tileAttribution, maxZoom: 19, noWrap: true }).addTo(map);
   }, [dark, map]);
   return null;
 }
@@ -86,53 +86,93 @@ function SiteMarker({
   dark: boolean;
   icon: L.DivIcon;
 }) {
-  const tooltipRef = useRef<HTMLDivElement | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
 
-  // Keep the map from zooming while the user scrolls inside the tooltip.
-  // The native listener runs before the event reaches Leaflet's wheel handler
-  // on the map container.
+  // Keep the map from zooming while the user scrolls inside the popup content.
   useEffect(() => {
-    const el = tooltipRef.current;
+    const el = contentRef.current;
     if (!el) return;
     const stopWheel = (e: WheelEvent) => e.stopPropagation();
     el.addEventListener("wheel", stopWheel, { passive: false });
     return () => el.removeEventListener("wheel", stopWheel);
   }, []);
 
-  const tooltipHtml = `
-    <div style="padding:10px;min-width:220px;max-width:320px;max-height:280px;overflow-y:auto;background:${dark ? "#1f2937" : "#ffffff"};color:${dark ? "#e5e7eb" : "#111827"};border-radius:8px;border:1px solid ${dark ? "#374151" : "#e5e7eb"};box-shadow:0 4px 16px rgba(0,0,0,${dark ? "0.5" : "0.15"})">
-      <div style="font-weight:700;font-size:13px;margin-bottom:8px;color:${dark ? "#f3f4f6" : "#111827"}">${escapeHtml(location.site_name)}</div>
-      ${location.networks.length === 0
-        ? `<div style="font-size:12px;color:${dark ? "#9ca3af" : "#6b7280"}">No subnets configured</div>`
-        : location.networks.map((net) => `
-          <div style="margin-bottom:6px;padding:6px 8px;border-radius:6px;background:${dark ? "rgba(55,65,81,0.5)" : "rgba(243,244,246,0.8)"}">
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="font-size:12px;font-weight:600;color:${dark ? "#d1d5db" : "#374151"}">${escapeHtml(net.subnet_name)}</span>
-              ${net.vlan_tag !== null ? `<span style="padding:1px 6px;border-radius:4px;font-size:10px;font-weight:500;background:${dark ? "rgba(59,130,246,0.2)" : "rgba(59,130,246,0.1)"};color:${dark ? "#60a5fa" : "#2563eb"}">VLAN ${escapeHtml(String(net.vlan_tag))}</span>` : ""}
-            </div>
-            <div style="margin-top:2px;font-family:monospace;font-size:11px;color:${dark ? "#9ca3af" : "#6b7280"}">${escapeHtml(net.cidr)}</div>
-            <div style="margin-top:2px;font-size:10px;color:${dark ? "#9ca3af" : "#6b7280"}">${escapeHtml(String(net.allocated_ips))}/${escapeHtml(String(net.total_ips))} IPs allocated</div>
-          </div>
-        `).join("")
-      }
-    </div>
-  `;
-
   return (
-    <Marker
-      position={[location.latitude, location.longitude]}
-      icon={icon}
-    >
-      <Tooltip
-        direction="top"
-        offset={[0, -10]}
-        opacity={1}
-        permanent={false}
-        interactive
-        className={`map-tooltip ${dark ? "map-tooltip-dark" : "map-tooltip-light"}`}
+    <Marker position={[location.latitude, location.longitude]} icon={icon}>
+      <Popup
+        minWidth={280}
+        maxWidth={320}
+        maxHeight={280}
+        className="map-popup"
+        autoPanPadding={[20, 20]}
       >
-        <div ref={tooltipRef} dangerouslySetInnerHTML={{ __html: tooltipHtml }} />
-      </Tooltip>
+        <div ref={contentRef} className="map-popup-content">
+          <div
+            style={{
+              fontWeight: 700,
+              fontSize: 13,
+              marginBottom: 8,
+              color: "#f1f5f9",
+            }}
+          >
+            {escapeHtml(location.site_name)}
+          </div>
+          {location.networks.length === 0 ? (
+            <div style={{ fontSize: 12, color: "#94a3b8" }}>No subnets configured</div>
+          ) : (
+            location.networks.map((net) => (
+              <div
+                key={`${net.subnet_name}-${net.cidr}`}
+                style={{
+                  marginBottom: 6,
+                  padding: "6px 8px",
+                  borderRadius: 6,
+                  background: "rgba(51,65,85,0.5)",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <span style={{ fontSize: 12, fontWeight: 600, color: "#e2e8f0" }}>
+                    {escapeHtml(net.subnet_name)}
+                  </span>
+                  {net.vlan_tag !== null ? (
+                    <span
+                      style={{
+                        padding: "1px 6px",
+                        borderRadius: 4,
+                        fontSize: 10,
+                        fontWeight: 500,
+                        background: "rgba(59,130,246,0.2)",
+                        color: "#60a5fa",
+                      }}
+                    >
+                      VLAN {escapeHtml(String(net.vlan_tag))}
+                    </span>
+                  ) : null}
+                </div>
+                <div
+                  style={{
+                    marginTop: 2,
+                    fontFamily: "monospace",
+                    fontSize: 11,
+                    color: "#94a3b8",
+                  }}
+                >
+                  {escapeHtml(net.cidr)}
+                </div>
+                <div style={{ marginTop: 2, fontSize: 10, color: "#94a3b8" }}>
+                  {escapeHtml(String(net.allocated_ips))}/{escapeHtml(String(net.total_ips))} IPs allocated
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </Popup>
     </Marker>
   );
 }
@@ -186,31 +226,37 @@ export default function MapView() {
       }`}
     >
       <style>{`
-        .map-tooltip .leaflet-tooltip-content {
-          background: transparent !important;
-          border: none !important;
-          box-shadow: none !important;
-          padding: 0 !important;
+        .leaflet-container {
+          background-color: #0f172a;
         }
-        .map-tooltip .leaflet-tooltip-content > div {
+        .leaflet-popup-content-wrapper {
+          background-color: #1e293b;
+          border: 1px solid #334155;
+          color: #e2e8f0;
+          border-radius: 10px;
+        }
+        .leaflet-popup-tip {
+          background-color: #1e293b;
+          border: 1px solid #334155;
+        }
+        .leaflet-container a.leaflet-popup-close-button {
+          color: #94a3b8;
+        }
+        .leaflet-container a.leaflet-popup-close-button:hover {
+          color: #e2e8f0;
+        }
+        .map-popup-content {
           max-height: 280px;
           overflow-y: auto;
+          padding: 2px;
+          min-width: 240px;
         }
-        .map-tooltip .leaflet-tooltip-content > div::-webkit-scrollbar {
+        .map-popup-content::-webkit-scrollbar {
           width: 6px;
         }
-        .map-tooltip .leaflet-tooltip-content > div::-webkit-scrollbar-thumb {
-          background: ${dark ? "#4b5563" : "#d1d5db"};
+        .map-popup-content::-webkit-scrollbar-thumb {
+          background: #475569;
           border-radius: 3px;
-        }
-        .map-tooltip .leaflet-tooltip-tip {
-          display: none !important;
-        }
-        .map-tooltip-dark .leaflet-tooltip-content {
-          color: #e5e7eb !important;
-        }
-        .map-tooltip-light .leaflet-tooltip-content {
-          color: #111827 !important;
         }
         .map-resize-handle {
           display: flex;
@@ -235,6 +281,9 @@ export default function MapView() {
       <MapContainer
         center={[20, 0]}
         zoom={2}
+        minZoom={2}
+        maxBounds={[[-90, -180], [90, 180]]}
+        maxBoundsViscosity={1.0}
         style={{ height: "350px", width: "100%" }}
         zoomControl={true}
         scrollWheelZoom={true}

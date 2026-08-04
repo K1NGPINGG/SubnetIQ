@@ -9,6 +9,7 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         gcc \
         libpq-dev \
+        postgresql-client \
         curl \
         iputils-ping \
         iputils-arping \
@@ -32,6 +33,9 @@ COPY . .
 
 # Make entrypoint executable
 RUN chmod +x docker-entrypoint.sh
+
+# Backup archive directory (named volume, must be writable by the app user)
+RUN mkdir -p /backups && chown -R appuser:appuser /backups
 
 # Switch to non-root user
 USER appuser

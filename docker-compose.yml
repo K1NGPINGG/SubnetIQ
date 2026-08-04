@@ -50,6 +50,7 @@ services:
       - ./backend:/app
       - tenant_logos:/app/static/tenants
       - ./.updates:/updates
+      - backups:/backups
     # No exposed port on the host - the subnetiq-app nginx proxies to it.
     depends_on:
       postgres:
@@ -74,13 +75,14 @@ services:
     volumes:
       - ./backend:/app
       - /proc/net/arp:/host/arp:ro
+      - backups:/backups
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     entrypoint: ["celery"]
-    command: ["-A", "app.tasks.worker", "worker", "--loglevel=info"]
+    command: ["-A", "app.tasks.worker", "worker", "-B", "--loglevel=info"]
 
   # Main application (standalone by default).
   # Serves the SPA and proxies /api to the backend. It is exposed directly on
@@ -174,3 +176,4 @@ volumes:
   postgres_data:
   redis_data:
   tenant_logos:
+  backups:

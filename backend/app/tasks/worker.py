@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 from typing import Any, cast
 
 from celery import Celery
+from celery.schedules import crontab
 
 from app.core.config import settings
 
@@ -497,6 +498,36 @@ def run_winrm_asset_discovery(self, tenant_id: str, target_ips: list, username: 
     return {"scan_id": scan_id or str(self.request.id), "status": "completed"}
 
 
+@celery_app.task(bind=True, name="tasks.run_backup")
+def run_backup(self, kind: str = "manual"):
+    """Celery task to create a database backup archive and enforce retention."""
+    from app.services.backup import create_backup, enforce_retention
+    try:
+        path = create_backup(kind=kind)
+        removed = enforce_retention()
+        logger.info("Backup created: %s (retention removed %d)", path.name, removed)
+        return {"filename": path.name, "status": "success", "removed": removed}
+    except Exception as e:
+        logger.error("Backup failed: %s", e)
+        return {"status": "failed", "error": str(e)}
+
+
+@celery_app.task(bind=True, name="tasks.run_restore")
+def run_restore(self, filename: str):
+    """Celery task to restore a backup archive into the database (destructive)."""
+    from app.services.backup import BACKUP_DIR, restore_backup
+    try:
+        path = BACKUP_DIR / filename
+        if not path.is_file() or not path.name.endswith(".tar.gz"):
+            raise FileNotFoundError(filename)
+        restore_backup(path)
+        logger.info("Restore completed from %s", filename)
+        return {"status": "success", "filename": filename}
+    except Exception as e:
+        logger.error("Restore failed: %s", e)
+        return {"status": "failed", "error": str(e)}
+
+
 # Schedule periodic tasks
 celery_app.conf.beat_schedule = {
     "cleanup-expired-ips-every-hour": {
@@ -506,5 +537,10 @@ celery_app.conf.beat_schedule = {
     "check-scheduled-scans-every-minute": {
         "task": "tasks.check_scheduled_scans",
         "schedule": 60.0,
+    },
+    "daily-automated-backup": {
+        "task": "tasks.run_backup",
+        "schedule": crontab(hour=0, minute=0),
+        "args": ("automated",),
     },
 }

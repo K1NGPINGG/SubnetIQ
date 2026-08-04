@@ -41,6 +41,7 @@ const pageTitles: Record<string, string> = {
   "/admin/webhooks": "Webhooks",
   "/admin/integrations": "Integrations",
   "/admin/update": "Updates",
+  "/admin/backups": "Backups",
   "/admin/audit": "Audit Logs",
   "/profile": "Profile",
   "/about": "About SubnetIQ",

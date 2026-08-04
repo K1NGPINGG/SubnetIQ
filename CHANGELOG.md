@@ -5,6 +5,35 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026
+
+### Added
+
+- **Backup & Restore management** — full disaster-recovery support:
+  - `POST /system/backups/create` triggers a Celery task that runs native `pg_dump`
+    and bundles the dump + a manifest (schema/app versions) into a timestamped
+    `.tar.gz` archive stored in a protected `/backups` volume.
+  - `GET /system/backups` lists backups; `GET /system/backups/{filename}/download`
+    downloads them; `DELETE` removes one.
+  - `POST /system/backups/restore` accepts an uploaded `.tar.gz`, validates schema/app
+    compatibility, terminates active connections, and restores via `pg_restore --clean`.
+  - **Scheduled automated backups** — Celery Beat creates a backup daily at midnight and
+    enforces a 7-day retention window.
+  - **Backups admin UI** (Administration → Backups): "Create Backup Now", drag-and-drop
+    upload/restore with a `Type CONFIRM to proceed` modal, and a history table
+    (size / created / manual-vs-automated / Download / Delete).
+
+### Changed
+
+- **Dashboard map** — site markers now open on **click** with scrollable popups
+  (`minWidth/maxHeight` + `overflow-y-auto`) that stay open while scrolling; added
+  `minZoom=2`, world `maxBounds` with `maxBoundsViscosity=1.0`, `noWrap` tiles, a dark
+  `#0f172a` map background, and themed popup styling to avoid white gaps when zooming out.
+- **Dashboard widgets** — the duplicate "Subnet Utilization" list was replaced by a
+  **Recent Activity** feed (powered by the audit endpoint, with action icons, relative
+  timestamps, and usernames); the top **Allocated** KPI card now shows a thin
+  utilization progress bar `(allocated/total)`.
+
 ## [1.2.6] - 2026
 
 ### Fixed
@@ -204,6 +233,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Admin update feature** — check GitHub releases and automatically update the running stack.
 - **REST API** — full REST API with JWT authentication and MFA.
 
+[1.3.0]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.2.6...v1.3.0
 [1.2.6]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.2.5...v1.2.6
 [1.2.5]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.2.4...v1.2.5
 [1.2.4]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.2.3...v1.2.4

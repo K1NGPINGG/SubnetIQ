@@ -1,5 +1,16 @@
 import { useState } from "react";
-import { Globe, CheckCircle, Clock, Network, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Globe,
+  CheckCircle,
+  Clock,
+  Network,
+  ChevronDown,
+  Activity,
+  Plus,
+  Pencil,
+  Trash2,
+  X,
+} from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -10,10 +21,77 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
-import { useDashboard } from "@/hooks/api";
+import { useDashboard, useRecentActivity } from "@/hooks/api";
 import { cn } from "@/shared/lib/utils";
 import { useThemeStore } from "@/shared/lib/theme-store";
 import MapView from "@/components/map/MapView";
+import type { AuditLogEntry } from "@/hooks/api";
+
+function timeAgo(iso?: string | null): string {
+  if (!iso) return "";
+  const diff = Date.now() - new Date(iso).getTime();
+  const s = Math.floor(diff / 1000);
+  if (s < 60) return "just now";
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
+function RecentActivityCard() {
+  const dark = useThemeStore((s) => s.dark);
+  const { data: activities = [] } = useRecentActivity(10);
+
+  const actionMeta: Record<string, { icon: typeof Activity; color: string }> = {
+    create: { icon: Plus, color: "text-emerald-500" },
+    update: { icon: Pencil, color: "text-blue-500" },
+    delete: { icon: Trash2, color: "text-red-500" },
+    release: { icon: Clock, color: "text-amber-500" },
+    allocate: { icon: CheckCircle, color: "text-emerald-500" },
+    approve: { icon: CheckCircle, color: "text-emerald-500" },
+    reject: { icon: X, color: "text-red-500" },
+  };
+
+  const cardClass = `rounded-lg border p-4 shadow-sm ${dark ? "border-gray-700 bg-gray-800" : "border-gray-200 bg-white"}`;
+
+  return (
+    <div className={cardClass}>
+      <h3 className={`mb-4 text-sm font-semibold ${dark ? "text-white" : "text-gray-900"}`}>
+        Recent Activity
+      </h3>
+      {activities.length === 0 ? (
+        <div className="flex h-[300px] items-center justify-center text-sm text-gray-400">
+          No recent activity
+        </div>
+      ) : (
+        <div className="custom-scrollbar max-h-[300px] space-y-3 overflow-y-auto pr-1">
+          {activities.map((log: AuditLogEntry) => {
+            const meta = actionMeta[log.action] ?? { icon: Activity, color: "text-slate-500" };
+            const Icon = meta.icon;
+            const user = log.user_name ?? log.user_email ?? "System";
+            return (
+              <div key={log.id} className="flex items-start gap-3">
+                <div className={`mt-0.5 rounded-md p-1.5 ${dark ? "bg-gray-700" : "bg-gray-100"}`}>
+                  <Icon className={`h-3.5 w-3.5 ${meta.color}`} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className={`truncate text-xs font-medium ${dark ? "text-gray-200" : "text-gray-700"}`}>
+                      <span className="capitalize">{log.action}</span> {log.entity_type}
+                    </span>
+                    <span className="shrink-0 text-[10px] text-gray-400">{timeAgo(log.created_at)}</span>
+                  </div>
+                  <div className={`text-[11px] ${dark ? "text-gray-400" : "text-gray-500"}`}>{user}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const metricConfig = [
   {
@@ -67,10 +145,7 @@ export default function DashboardPage() {
   const dark = useThemeStore((s) => s.dark);
   // Chart "Top N" dropdown (5/10/20/All)
   const [limit, setLimit] = useState(5);
-  // Subnet Utilization list pagination
-  const [listPageSize, setListPageSize] = useState(5);
-  const [listPage, setListPage] = useState(0);
-  // Fetch all subnets once (limit=0) so the list can paginate over everything.
+  // Fetch all subnets once (limit=0) so the chart "All" option shows everything.
   const { data, isLoading } = useDashboard(0);
 
   if (isLoading) {
@@ -83,14 +158,10 @@ export default function DashboardPage() {
 
   const summary = data?.summary;
   const topSubnets = data?.top_subnets_by_utilization ?? [];
+  const totalIps = summary?.total_ips ?? 0;
+  const allocatedIps = summary?.allocated_ips ?? 0;
 
   const chartData = limit === 0 ? topSubnets : topSubnets.slice(0, limit);
-  const listPageCount = Math.max(1, Math.ceil(topSubnets.length / listPageSize));
-  const safeListPage = Math.min(listPage, listPageCount - 1);
-  const listPageData = topSubnets.slice(
-    safeListPage * listPageSize,
-    (safeListPage + 1) * listPageSize
-  );
 
   return (
     <div className="space-y-6">
@@ -118,6 +189,19 @@ export default function DashboardPage() {
               <p className={`text-2xl font-bold ${dark ? "text-white" : "text-gray-900"}`}>
                 {summary?.[m.key]?.toLocaleString() ?? "—"}
               </p>
+              {m.key === "allocated_ips" && totalIps > 0 && (
+                <div className="mt-2 flex items-center gap-2">
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-gray-700">
+                    <div
+                      className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+                      style={{ width: `${Math.min(100, (allocatedIps / totalIps) * 100)}%` }}
+                    />
+                  </div>
+                  <span className={`shrink-0 text-[10px] font-medium ${dark ? "text-gray-400" : "text-gray-500"}`}>
+                    {totalIps > 0 ? Math.round((allocatedIps / totalIps) * 100) : 0}%
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -200,118 +284,7 @@ export default function DashboardPage() {
           )}
         </div>
 
-        <div className={`rounded-lg border p-4 shadow-sm ${dark ? "border-gray-700 bg-gray-800" : "border-gray-200 bg-white"}`}>
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className={`text-sm font-semibold ${dark ? "text-white" : "text-gray-900"}`}>
-              Subnet Utilization
-            </h3>
-            <div className="relative">
-              <select
-                value={listPageSize}
-                onChange={(e) => {
-                  setListPageSize(Number(e.target.value));
-                  setListPage(0);
-                }}
-                className={`appearance-none rounded-md border py-1.5 pl-3 pr-8 text-xs font-medium focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
-                  dark
-                    ? "border-gray-600 bg-gray-700 text-white"
-                    : "border-gray-300 bg-white text-gray-700"
-                }`}
-              >
-                {[
-                  { value: 5, label: "5 per page" },
-                  { value: 10, label: "10 per page" },
-                  { value: 20, label: "20 per page" },
-                  { value: 50, label: "50 per page" },
-                  { value: 99999, label: "All" },
-                ].map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            {listPageData.length > 0 ? (
-              listPageData.map((s) => (
-                <div key={s.subnet_id}>
-                  <div className="mb-1 flex items-center justify-between text-xs">
-                    <span className={`font-medium ${dark ? "text-gray-300" : "text-gray-700"}`}>
-                      {s.name}
-                    </span>
-                    <span className={dark ? "text-gray-400" : "text-gray-500"}>
-                      {s.used}/{s.total_ips} ({s.utilization_pct.toFixed(1)}%)
-                    </span>
-                  </div>
-                  <div className={`h-2 w-full overflow-hidden rounded-full ${dark ? "bg-gray-700" : "bg-gray-100"}`}>
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{
-                        width: `${Math.min(s.utilization_pct, 100)}%`,
-                        backgroundColor: getBarColor(s.utilization_pct),
-                      }}
-                    />
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="py-8 text-center text-sm text-gray-400">
-                No subnets to display
-              </div>
-            )}
-          </div>
-
-          {topSubnets.length > 0 && listPageSize < 99999 && (
-            <div className="mt-4 flex items-center justify-between border-t pt-3 text-sm">
-              <span className={`text-xs ${dark ? "text-gray-400" : "text-gray-500"}`}>
-                Page {safeListPage + 1} of {listPageCount} ({topSubnets.length} subnets)
-              </span>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setListPage((p) => Math.max(0, p - 1))}
-                  disabled={safeListPage === 0}
-                  className={`inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
-                    dark ? "text-gray-400 hover:bg-gray-700" : "text-gray-500 hover:bg-gray-200"
-                  }`}
-                  title="Previous page"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-                {Array.from({ length: Math.min(listPageCount, 7) }, (_, i) => {
-                  const page = i;
-                  return (
-                    <button
-                      key={page}
-                      onClick={() => setListPage(page)}
-                      className={`inline-flex h-7 min-w-[28px] items-center justify-center rounded-md px-1.5 text-xs font-medium transition-colors ${
-                        page === safeListPage
-                          ? "bg-blue-600 text-white"
-                          : dark
-                          ? "text-gray-400 hover:bg-gray-700"
-                          : "text-gray-600 hover:bg-gray-200"
-                      }`}
-                    >
-                      {page + 1}
-                    </button>
-                  );
-                })}
-                <button
-                  onClick={() => setListPage((p) => Math.min(listPageCount - 1, p + 1))}
-                  disabled={safeListPage >= listPageCount - 1}
-                  className={`inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
-                    dark ? "text-gray-400 hover:bg-gray-700" : "text-gray-500 hover:bg-gray-200"
-                  }`}
-                  title="Next page"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+        <RecentActivityCard />
       </div>
     </div>
   );

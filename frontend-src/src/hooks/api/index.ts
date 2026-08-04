@@ -848,6 +848,93 @@ export function useAuditActions() {
   });
 }
 
+/** Recent activity feed for the dashboard (admin-only data; fails gracefully). */
+export function useRecentActivity(limit = 10) {
+  return useQuery({
+    queryKey: [...auditKeys.all, "recent", limit],
+    queryFn: async () => {
+      try {
+        const res = await apiClient.get<AuditLogResponse>(`/audit/?limit=${limit}`);
+        return res.data.logs ?? [];
+      } catch {
+        return [] as AuditLogEntry[];
+      }
+    },
+    refetchInterval: 30000,
+  });
+}
+
+// ── Backups ────────────────────────────────────────────────────────────────
+
+export interface BackupEntry {
+  filename: string;
+  size: number;
+  created_at: string;
+  kind: "manual" | "automated";
+}
+
+const backupKeys = {
+  all: ["backups"] as const,
+};
+
+export function useBackups() {
+  return useQuery({
+    queryKey: backupKeys.all,
+    queryFn: () =>
+      apiClient.get<{ backups: BackupEntry[] }>("/system/backups").then((r) => r.data.backups),
+  });
+}
+
+export function useCreateBackup() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiClient.post("/system/backups/create").then((r) => r.data),
+    onSuccess: () => {
+      // Creation runs asynchronously in Celery; refresh the list shortly after.
+      setTimeout(() => qc.invalidateQueries({ queryKey: backupKeys.all }), 15000);
+    },
+  });
+}
+
+export function useDeleteBackup() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (filename: string) =>
+      apiClient.delete(`/system/backups/${encodeURIComponent(filename)}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: backupKeys.all }),
+  });
+}
+
+export function useRestoreBackup() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => {
+      const fd = new FormData();
+      fd.append("file", file);
+      return apiClient
+        .post("/system/backups/restore", fd, {
+          headers: { "Content-Type": "multipart/form-data" },
+        })
+        .then((r) => r.data);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: backupKeys.all }),
+  });
+}
+
+export async function downloadBackup(filename: string): Promise<void> {
+  const res = await apiClient.get(`/system/backups/${encodeURIComponent(filename)}/download`, {
+    responseType: "blob",
+  });
+  const url = URL.createObjectURL(res.data as Blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 const systemLogKeys = {
   all: ["system-logs"] as const,
   list: () => [...systemLogKeys.all, "list"] as const,

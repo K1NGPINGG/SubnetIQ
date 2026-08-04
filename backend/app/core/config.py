@@ -17,7 +17,7 @@ class Settings(BaseSettings):
 
     # Application
     APP_NAME: str = "SubnetIQ"
-    APP_VERSION: str = "1.2.6"
+    APP_VERSION: str = "1.3.0"
     DEBUG: bool = False
 
     # Release updates
@@ -65,6 +65,10 @@ class Settings(BaseSettings):
     # Superadmin
     SUPERADMIN_EMAIL: str = "admin@ipam.local"
     SUPERADMIN_PASSWORD: str = "changeme123!"
+
+    # Backups
+    BACKUP_DIR: str = "/backups"
+    BACKUP_RETENTION_DAYS: int = 7
 
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod
