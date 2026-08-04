@@ -5,6 +5,7 @@ A modern IP Address Management (IPAM) platform built with FastAPI, React, Postgr
 ## Features
 
 - **IP Address Management** — subnet hierarchy, IP allocation/deallocation, utilization tracking
+- **Virtual IP (VIP) Inventory** — mark IPs as VIPs (Keepalived, CARP/VRRP, load balancer, Kubernetes, floating cloud), link them to backing node IPs, and filter VIPs in the UI
 - **Address Hierarchy** — VRFs, RIRs, Aggregates, IP Ranges, and ASNs for structured address space
 - **Site & VLAN Management** — organize assets by location and network segment
 - **Asset Discovery** — SNMP and WinRM scanning for automatic inventory

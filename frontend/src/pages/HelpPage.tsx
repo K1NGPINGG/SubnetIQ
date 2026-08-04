@@ -72,6 +72,7 @@ export default function HelpPage() {
       <Section title="What's New" defaultOpen>
         <div className="space-y-3">
           <ul className="list-disc list-inside space-y-1 ml-2">
+            <li><strong>Virtual IP (VIP) inventory</strong> &mdash; Mark IPs as VIPs, set their mechanism type, and link them to backing node IPs with roles.</li>
             <li><strong>IPAM Records</strong> &mdash; A unified, searchable view of every IP across all subnets with per-record editing, bulk editing, and CSV/PDF export.</li>
             <li><strong>Live scan status</strong> &mdash; Discovery scan progress now updates automatically while a scan runs &mdash; no manual refresh needed.</li>
             <li><strong>Admin updates</strong> &mdash; Check for new SubnetIQ releases and update the stack from the Admin area.</li>
@@ -112,6 +113,20 @@ export default function HelpPage() {
             <li><strong>Export</strong> &mdash; Download the current view as <strong>CSV</strong> (for Excel/Numbers) or a formatted <strong>PDF</strong> report.</li>
           </ul>
           <p>Backed by <code>GET /api/v1/ips/records</code>.</p>
+        </div>
+      </Section>
+
+      <Section title="Virtual IPs (VIPs)">
+        <div className="space-y-3">
+          <p>SubnetIQ can track <strong>Virtual IP (VIP) inventory</strong>: IP addresses that float between
+          multiple physical/virtual hosts (Keepalived, CARP/VRRP, load balancers, Kubernetes, or cloud floating IPs).</p>
+          <ul className="list-disc list-inside space-y-1 ml-2">
+            <li>On the <strong>IPs</strong> page, mark an address as a <strong>VIP</strong> and pick its mechanism type (<code>keepalived</code>, <code>carp_vrrp</code>, <code>load_balancer</code>, <code>kubernetes</code>, <code>floating_cloud</code>).</li>
+            <li>Assign <strong>backing node IPs</strong> to the VIP, each with a role (<code>primary</code>, <code>backup</code>, <code>active</code>, <code>standby</code>).</li>
+            <li>VIPs show a <strong>badge</strong> in the IP table along with their type and bound nodes; use the <strong>All IPs / Static IPs / VIPs Only</strong> filter to view them.</li>
+            <li>Demoting a VIP (unchecking the toggle) clears its type and node bindings automatically.</li>
+            <li>Discovery scans report which detected hosts are VIPs, but never modify their node bindings.</li>
+          </ul>
         </div>
       </Section>
 
@@ -258,7 +273,7 @@ POST /api/v1/auth/login         # Include "mfa_code" when enabled`}</CodeBlock>
           <ApiEndpoint method="POST" path="/api/v1/ips/bulk" desc="Bulk-create many IPs at once" />
           <ApiEndpoint method="GET" path="/api/v1/ips/by-address/{address}" desc="Find an IP by its address" />
           <ApiEndpoint method="GET" path="/api/v1/ips/usage/{subnet_id}" desc="Get IP usage stats for a subnet" />
-          <ApiEndpoint method="PUT" path="/api/v1/ips/{id}" desc="Update IP (hostname, status, MAC, device type, assigned_to)" />
+          <ApiEndpoint method="PUT" path="/api/v1/ips/{id}" desc="Update IP (hostname, status, MAC, device type, assigned_to, VIP type/node bindings)" />
           <ApiEndpoint method="DELETE" path="/api/v1/ips/{id}" desc="Release an IP address" />
 
           <h4 className={`font-semibold text-xs mt-4 mb-2 ${dark ? "text-gray-400" : "text-gray-500"}`}>VRFs, RIRs, AGGREGATES, ASNs</h4>

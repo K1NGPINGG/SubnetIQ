@@ -1,5 +1,5 @@
 import { useThemeStore } from "@/shared/lib/theme-store";
-import { Network, Shield, Globe, Radar, Box, Monitor, Table } from "lucide-react";
+import { Network, Shield, Globe, Radar, Box, Monitor, Table, Layers } from "lucide-react";
 
 const features = [
   {
@@ -37,14 +37,19 @@ const features = [
     title: "IPAM Records",
     description: "A unified view of every IP across all subnets. Search, filter, edit single records, bulk-edit many at once, and export the results to CSV or PDF.",
   },
+  {
+    icon: Layers,
+    title: "Virtual IP Inventory",
+    description: "Track Virtual IPs (Keepalived, CARP/VRRP, load balancers, Kubernetes, floating cloud IPs) and link them to their backing node IPs with role bindings.",
+  },
 ];
 
 const techStack = [
-  { category: "Backend", items: ["Python 3.12", "FastAPI", "SQLAlchemy 2.0", "Alembic", "Pydantic v2", "PostgreSQL 16", "Redis 7", "Celery", "uvicorn"] },
-  { category: "Frontend", items: ["React 19", "TypeScript", "Vite 6", "Tailwind CSS v4", "TanStack Query", "TanStack Table", "Zustand", "React Hook Form", "Zod", "Recharts", "Leaflet", "axios", "lucide-react"] },
+  { category: "Backend", items: ["Python 3.12", "FastAPI", "SQLAlchemy 2.0", "Alembic", "Pydantic v2", "PostgreSQL 16", "Redis 7", "Celery", "httpx", "uvicorn"] },
+  { category: "Frontend", items: ["React 19", "TypeScript", "Vite 6", "Tailwind CSS v4", "TanStack Query", "TanStack Table", "Zustand", "React Hook Form", "Zod", "Recharts", "Leaflet / react-leaflet", "jsPDF + jspdf-autotable", "axios", "lucide-react"] },
   { category: "Discovery", items: ["pysnmp-lextudio (SNMP v1/v2c/v3)", "pypsrp (WinRM)", "ICMP/ARP scanning"] },
   { category: "Security", items: ["PyJWT", "bcrypt", "passlib", "TOTP MFA", "Fernet encryption", "slowapi rate limiting"] },
-  { category: "Infrastructure", items: ["Docker Compose", "Nginx", "GitHub Actions CI"] },
+  { category: "Infrastructure", items: ["Docker Compose", "Nginx", "Certbot (Let's Encrypt)", "GitHub Actions CI"] },
 ];
 
 export default function AboutPage() {

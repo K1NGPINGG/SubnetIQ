@@ -153,6 +153,19 @@ Typical **statuses**: available, allocated, reserved, and others your organizati
 Every IP carries optional metadata: hostname, MAC address, device type, assignee, description,
 tags, and custom fields.
 
+### Virtual IPs (VIPs)
+
+To track a **Virtual IP** (an address that floats between hosts via Keepalived, CARP/VRRP,
+a load balancer, Kubernetes, or a cloud floating IP):
+
+1. In the IP create/edit dialog, tick **Virtual IP (VIP)**.
+2. Pick the **VIP type** (keepalived, carp_vrrp, load_balancer, kubernetes, floating_cloud).
+3. **Add backing node IPs** and assign each a role (`primary`, `backup`, `active`, `standby`).
+
+VIPs are shown with a purple **VIP** badge in the IP table, along with their type and bound
+nodes. Use the **All IPs / Static IPs / VIPs Only** filter in the toolbar to view just VIPs.
+Unticking the VIP toggle (demoting) clears the type and node bindings automatically.
+
 ---
 
 ## 8. Step 6 — Use the IPAM Records Page
