@@ -35,6 +35,7 @@ from app.schemas.ip_address import (
     IPAddressUpdate,
     IPAllocationRequest,
     SubnetUsageResponse,
+    VIPNodeBindingCreate,
 )
 
 router = APIRouter()
@@ -52,7 +53,12 @@ async def _create_node_bindings(
     tenant_id: UUID,
 ) -> None:
     """Create VIPNodeBinding rows for a VIP, validating each node IP belongs to the tenant."""
-    for binding in bindings:
+    # bindings may be pydantic objects (create flow) or dicts (model_dump in update).
+    normalized = [
+        b if isinstance(b, VIPNodeBindingCreate) else VIPNodeBindingCreate(**b)
+        for b in bindings
+    ]
+    for binding in normalized:
         node_result = await db.execute(
             select(IPAddress).where(
                 IPAddress.id == binding.node_ip_id,
@@ -450,8 +456,9 @@ async def update_ip(
         setattr(ip, field, value)
 
     # Manage VIP node bindings: replace them when provided, clear them when the
-    # record is being demoted to a non-VIP.
+    # record is being demoted to a non-VIP (also drop the stale vip_type).
     if update_data.get("is_vip") is False:
+        ip.vip_type = None
         await db.execute(delete(VIPNodeBinding).where(VIPNodeBinding.vip_id == ip.id))
     elif bindings_provided:
         await db.execute(delete(VIPNodeBinding).where(VIPNodeBinding.vip_id == ip.id))
