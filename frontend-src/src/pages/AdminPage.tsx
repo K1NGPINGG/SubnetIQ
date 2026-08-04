@@ -915,16 +915,18 @@ function UpdateTab() {
   }, [reloading]);
 
   const running = state?.status === "running";
-  // Before the first poll confirms the update has started, show an indeterminate
-  // bar rather than the previous update's stale 100%.
+  // Keep the bar indeterminate until the updater has actually started (we've seen
+  // a "running" state), so a stale "success/100%" from a previous update can't
+  // show as a false 100% right after clicking Update.
+  const confirmedStart = running || sawRunningRef.current;
   const progress =
-    triggered && !liveState
+    triggered && !confirmedStart
       ? null
       : typeof state?.progress === "number"
         ? Math.max(0, Math.min(100, state.progress))
         : null;
   const stepLabel =
-    triggered && !liveState
+    triggered && !confirmedStart
       ? "Starting update..."
       : (state?.step ?? (running ? "Preparing update..." : "Update failed"));
 

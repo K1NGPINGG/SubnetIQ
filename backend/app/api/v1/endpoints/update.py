@@ -209,19 +209,4 @@ async def run_update(
         target_tag = latest["tag_name"]
 
     _write_trigger(target_tag, requested_by=current_user.email)
-    # Reset the state to "running / 0%" immediately so the UI doesn't show the
-    # previous update's stale "success / 100%" state before the updater starts.
-    UPDATES_DIR.mkdir(parents=True, exist_ok=True)
-    STATE_FILE.write_text(
-        json.dumps(
-            {
-                "status": "running",
-                "tag": target_tag,
-                "started_at": _now_iso(),
-                "progress": 0,
-                "step": "Starting update",
-            }
-        ),
-        encoding="utf-8",
-    )
     return {"accepted": True, "tag": target_tag, "triggered_at": _now_iso()}
