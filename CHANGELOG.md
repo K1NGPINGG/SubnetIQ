@@ -5,6 +5,22 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2026
+
+### Fixed
+
+- **Dashboard "Subnets by Utilization" "All" filter** — previously capped at the top 5 (and at
+  most 10) subnets; selecting "All" now returns every subnet.
+- **Results-per-page is remembered** — the page-size selection (10/50/100/All) is persisted
+  and applied on every list across the app.
+- **Update progress bar** — now appears reliably when an update starts (optimistic display +
+  fast polling) instead of being missed on quick updates, and the page **auto-reloads**
+  once the update completes so the new build/version loads.
+- **Consistent Edit button** — all pages with editing now use the same labeled Edit button
+  (CRUD pages, IPs, IPAM Records, VIPs, users, SNMP/WinRM profiles, sites, subnets, VLANs, tenants).
+- **"What's New" grouped by release** — Help page now lists features under their version
+  (v1.2.0 / v1.0.3 / v1.0.2 / v1.0.0).
+
 ## [1.2.0] - 2026
 
 ### Added
@@ -127,6 +143,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Admin update feature** — check GitHub releases and automatically update the running stack.
 - **REST API** — full REST API with JWT authentication and MFA.
 
+[1.2.1]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.0.3...v1.1.0
 [1.0.3]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.0.2...v1.0.3
