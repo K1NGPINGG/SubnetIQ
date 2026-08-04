@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Trash2, Search } from "lucide-react";
@@ -63,13 +63,13 @@ export default function VlansPage() {
     }),
     col.accessor("description", {
       header: "Description",
-      cell: (info) => info.getValue() ?? "â€”",
+      cell: (info) => info.getValue() ?? "—",
     }),
     col.accessor("site_id", {
       header: "Site",
       cell: (info) => {
         const site = sites.find((s) => s.id === info.getValue());
-        return site?.name ?? "â€”";
+        return site?.name ?? "—";
       },
     }),
     col.display({

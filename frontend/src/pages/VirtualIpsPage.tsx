@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { createColumnHelper } from "@tanstack/react-table";
 import { Plus, Trash2, Search, Layers } from "lucide-react";
 import {
@@ -83,20 +83,20 @@ export default function VirtualIpsPage() {
     }),
     col.accessor("hostname", {
       header: "Hostname",
-      cell: (info) => info.getValue() ?? "â€”",
+      cell: (info) => info.getValue() ?? "—",
     }),
     col.accessor("vip_type" as any, {
       header: "VIP Type",
       cell: (info) => {
         const ip = info.row.original as IPAddress;
-        return ip.vip_type ? <Badge variant="default">{ip.vip_type}</Badge> : "â€”";
+        return ip.vip_type ? <Badge variant="default">{ip.vip_type}</Badge> : "—";
       },
     }),
     col.accessor("node_bindings" as any, {
       header: "Backing Nodes",
       cell: (info) => {
         const ip = info.row.original as IPAddress;
-        if (!ip.node_bindings || ip.node_bindings.length === 0) return "â€”";
+        if (!ip.node_bindings || ip.node_bindings.length === 0) return "—";
         return (
           <div className="flex flex-wrap gap-1">
             {ip.node_bindings.map((b) => (

@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Trash2, Search } from "lucide-react";
@@ -57,11 +57,11 @@ export default function SitesPage() {
     col.accessor("code", { header: "Code" }),
     col.accessor("city", {
       header: "City",
-      cell: (info) => info.getValue() ?? "â€”",
+      cell: (info) => info.getValue() ?? "—",
     }),
     col.accessor("country", {
       header: "Country",
-      cell: (info) => info.getValue() ?? "â€”",
+      cell: (info) => info.getValue() ?? "—",
     }),
     col.display({
       id: "actions",

@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { createColumnHelper } from "@tanstack/react-table";
 import {
   Search,
@@ -54,7 +54,7 @@ function formatCustomFields(ip: IPAddress, fields: CustomField[]): string {
       const label = def?.label || def?.name || key;
       return `${label}: ${String(value)}`;
     })
-    .join(" Â· ");
+    .join(" · ");
 }
 
 export default function IpamRecordsPage() {
@@ -167,7 +167,7 @@ export default function IpamRecordsPage() {
     }),
     col.accessor("hostname", {
       header: "Hostname",
-      cell: (info) => info.getValue() ?? "â€”",
+      cell: (info) => info.getValue() ?? "—",
     }),
     col.accessor("status", {
       header: "Status",
@@ -178,13 +178,13 @@ export default function IpamRecordsPage() {
     }),
     col.accessor("device_type", {
       header: "Device Type",
-      cell: (info) => info.getValue() ?? "â€”",
+      cell: (info) => info.getValue() ?? "—",
     }),
     col.accessor("vip_type" as any, {
       header: "VIP",
       cell: (info) => {
         const ip = info.row.original as IPAddress;
-        if (!ip.is_vip) return "â€”";
+        if (!ip.is_vip) return "—";
         return (
           <div className="space-y-1">
             <Badge variant="default">{ip.vip_type ?? "VIP"}</Badge>
@@ -217,12 +217,12 @@ export default function IpamRecordsPage() {
         if (cidr) {
           return <span className={`text-xs ${dark ? "text-gray-300" : "text-gray-600"}`}>{cidr}</span>;
         }
-        return "â€”";
+        return "—";
       },
     }),
     col.accessor("vrf_name", {
       header: "VRF",
-      cell: (info) => info.getValue() ?? "â€”",
+      cell: (info) => info.getValue() ?? "—",
     }),
     col.accessor("mac_address", {
       header: "MAC Address",
@@ -232,12 +232,12 @@ export default function IpamRecordsPage() {
             {info.getValue()}
           </span>
         ) : (
-          "â€”"
+          "—"
         ),
     }),
     col.accessor("assigned_to", {
       header: "Assigned To",
-      cell: (info) => info.getValue() ?? "â€”",
+      cell: (info) => info.getValue() ?? "—",
     }),
     col.display({
       id: "tags",
@@ -245,7 +245,7 @@ export default function IpamRecordsPage() {
       cell: (info) => {
         const ip = info.row.original;
         const ipTags = (ip.tags ?? []).filter(Boolean);
-        if (ipTags.length === 0) return "â€”";
+        if (ipTags.length === 0) return "—";
         return (
           <div className="flex flex-wrap gap-1">
             {ipTags.map((slug) => {
@@ -277,7 +277,7 @@ export default function IpamRecordsPage() {
             {value}
           </span>
         ) : (
-          "â€”"
+          "—"
         );
       },
     }),
@@ -285,7 +285,7 @@ export default function IpamRecordsPage() {
       header: "Description",
       cell: (info) => {
         const val = info.getValue();
-        if (!val) return "â€”";
+        if (!val) return "—";
         return (
           <span
             className={`text-xs ${dark ? "text-gray-400" : "text-gray-500"}`}
@@ -362,7 +362,7 @@ export default function IpamRecordsPage() {
     doc.setFontSize(10);
     doc.setTextColor(120);
     doc.text(
-      `Generated ${new Date().toLocaleString()} Â· ${filtered.length} records${statusFilter ? ` Â· status: ${statusFilter}` : ""}${search ? ` Â· search: "${search}"` : ""}`,
+      `Generated ${new Date().toLocaleString()} · ${filtered.length} records${statusFilter ? ` · status: ${statusFilter}` : ""}${search ? ` · search: "${search}"` : ""}`,
       14,
       22
     );
@@ -616,7 +616,7 @@ function CustomFieldsEditor({
                 }
                 className={inputCls(dark)}
               >
-                <option value="">â€”</option>
+                <option value="">—</option>
                 <option value="true">Yes</option>
                 <option value="false">No</option>
               </select>
@@ -632,7 +632,7 @@ function CustomFieldsEditor({
                 onChange={(e) => set(field.name, e.target.value || null)}
                 className={inputCls(dark)}
               >
-                <option value="">â€”</option>
+                <option value="">—</option>
                 {(field.choices ?? []).map((c) => (
                   <option key={c} value={c}>
                     {c}
@@ -842,7 +842,7 @@ function EditIpModal({
     <Modal
       open
       onClose={onClose}
-      title={`Edit IPAM Record â€” ${ip.address}`}
+      title={`Edit IPAM Record — ${ip.address}`}
       maxWidth="max-w-2xl"
       footer={
         <>
@@ -1154,7 +1154,7 @@ function BulkEditIpModal({
             onChange={(e) => setStatus(e.target.value)}
             className={inputCls(dark)}
           >
-            <option value="">â€” No change â€”</option>
+            <option value="">— No change —</option>
             <option value="allocated">Allocated</option>
             <option value="reserved">Reserved</option>
             <option value="available">Available</option>
@@ -1187,7 +1187,7 @@ function BulkEditIpModal({
             onChange={(e) => setTagMode(e.target.value as any)}
             className={inputCls(dark)}
           >
-            <option value="none">â€” No change â€”</option>
+            <option value="none">— No change —</option>
             <option value="add">Add selected tags</option>
             <option value="replace">Replace all tags</option>
             <option value="remove">Remove selected tags</option>

@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -43,7 +43,7 @@ const userCol = createColumnHelper<User>();
 
 type Tab = "users" | "integrations" | "snmp" | "winrm" | "update";
 
-// â”€â”€ Integration settings state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Integration settings state ───────────────────────────────────────
 
 interface IntegrationSettings {
   azure_ad: {
@@ -103,7 +103,7 @@ const defaultSettings: IntegrationSettings = {
   },
 };
 
-// â”€â”€ Main Admin Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Main Admin Page ───────────────────────────────────────────────────
 
 export default function AdminPage() {
   const location = useLocation();
@@ -127,7 +127,7 @@ export default function AdminPage() {
   );
 }
 
-// â”€â”€ Users Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Users Tab ─────────────────────────────────────────────────────────
 
 function UsersTab() {
   const dark = useThemeStore((s) => s.dark);
@@ -341,7 +341,7 @@ function UsersTab() {
   );
 }
 
-// â”€â”€ User Form Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── User Form Modal ───────────────────────────────────────────────────
 
 function UserFormModal({
   open,
@@ -511,7 +511,7 @@ function UserFormModal({
                 className="h-4 w-4 rounded border-gray-300"
               />
               <label htmlFor="mfa_enforced" className={`text-sm ${dark ? "text-gray-300" : "text-gray-700"}`}>
-                Enforce MFA â€” require this user to set up multi-factor authentication
+                Enforce MFA — require this user to set up multi-factor authentication
               </label>
             </div>
           </>
@@ -521,19 +521,19 @@ function UserFormModal({
   );
 }
 
-// â”€â”€ SNMP Profiles Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── SNMP Profiles Tab ──────────────────────────────────────────────────
 
 function SnmpTab() {
   return <SnmpProfilesPage />;
 }
 
-// â”€â”€ WinRM Profiles Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── WinRM Profiles Tab ──────────────────────────────────────────────
 
 function WinrmTab() {
   return <WinrmProfilesPage />;
 }
 
-// â”€â”€ Integrations Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Integrations Tab ──────────────────────────────────────────────────
 
 function IntegrationsTab() {
   const dark = useThemeStore((s) => s.dark);
@@ -851,7 +851,7 @@ function IntegrationsTab() {
   );
 }
 
-// â”€â”€ Update Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Update Tab ─────────────────────────────────────────────────────────
 
 function UpdateTab() {
   const dark = useThemeStore((s) => s.dark);
@@ -862,10 +862,11 @@ function UpdateTab() {
   const [triggered, setTriggered] = useState(false);
   const [reloading, setReloading] = useState(false);
   const [liveState, setLiveState] = useState<UpdateStatusResponse["state"] | null>(null);
+  const sawRunningRef = useRef(false);
 
   // While an update is active, poll the status endpoint directly (every 1.5s) so
   // the progress bar tracks reliably even while the app containers are being
-  // recreated mid-update. Reloads the app once the update completes.
+  // recreated mid-update.
   useEffect(() => {
     if (!triggered) return;
     let stopped = false;
@@ -874,10 +875,7 @@ function UpdateTab() {
         const res = await apiClient.get<UpdateStatusResponse>("/admin/update/status");
         if (stopped) return;
         setLiveState(res.data.state ?? null);
-        if (res.data.state?.status === "success") {
-          setTriggered(false);
-          setReloading(true);
-        } else if (res.data.state?.status === "failed") {
+        if (res.data.state?.status === "success" || res.data.state?.status === "failed") {
           setTriggered(false);
         }
       } catch {
@@ -892,18 +890,43 @@ function UpdateTab() {
     };
   }, [triggered]);
 
+  const state = liveState ?? data?.state;
+
+  // Remember that an update actually started. This guards against a stale
+  // "success" from a previous update causing a false completion + reload.
+  useEffect(() => {
+    if (state?.status === "running") sawRunningRef.current = true;
+  }, [state?.status]);
+
+  // Auto-reload the app once a running update completes (new build/version).
+  useEffect(() => {
+    if (sawRunningRef.current && state?.status === "success") {
+      sawRunningRef.current = false;
+      setReloading(true);
+    }
+  }, [state?.status]);
+
   // Give the "Update complete" state a moment to display, then reload.
   useEffect(() => {
     if (reloading) {
-      const t = setTimeout(() => window.location.reload(), 1500);
+      const t = setTimeout(() => window.location.reload(), 1200);
       return () => clearTimeout(t);
     }
   }, [reloading]);
 
-  const state = liveState ?? data?.state;
   const running = state?.status === "running";
+  // Before the first poll confirms the update has started, show an indeterminate
+  // bar rather than the previous update's stale 100%.
   const progress =
-    typeof state?.progress === "number" ? Math.max(0, Math.min(100, state.progress)) : null;
+    triggered && !liveState
+      ? null
+      : typeof state?.progress === "number"
+        ? Math.max(0, Math.min(100, state.progress))
+        : null;
+  const stepLabel =
+    triggered && !liveState
+      ? "Starting update..."
+      : (state?.step ?? (running ? "Preparing update..." : "Update failed"));
 
   const showProgress = running || state?.status === "failed" || triggered || reloading;
 
@@ -1001,9 +1024,7 @@ function UpdateTab() {
               <div className="flex items-center gap-2 text-sm">
                 {running && <RefreshCw className="h-4 w-4 animate-spin text-blue-500" />}
                 <span className={`font-medium ${dark ? "text-gray-200" : "text-gray-800"}`}>
-                  {reloading
-                    ? "Update complete â€” reloading app..."
-                    : (state?.step ?? (running ? "Preparing update..." : triggered ? "Starting update..." : "Update failed"))}
+                  {reloading ? "Update complete - reloading app..." : stepLabel}
                 </span>
               </div>
               {progress !== null && (
@@ -1024,9 +1045,9 @@ function UpdateTab() {
                 style={{ width: progress !== null ? `${progress}%` : reloading ? "100%" : "40%" }}
               />
             </div>
-            {state?.tag && (
+            {(liveState?.tag ?? state?.tag) && (
               <div className={`mt-2 text-xs ${dark ? "text-gray-500" : "text-gray-500"}`}>
-                Updating to {state.tag}
+                Updating to {liveState?.tag ?? state?.tag}
               </div>
             )}
           </div>

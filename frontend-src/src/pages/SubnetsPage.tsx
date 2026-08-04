@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Trash2, Search } from "lucide-react";
@@ -69,20 +69,20 @@ export default function SubnetsPage() {
     }),
     col.accessor("gateway", {
       header: "Gateway",
-      cell: (info) => info.getValue() ?? "â€”",
+      cell: (info) => info.getValue() ?? "—",
     }),
     col.accessor("site_id", {
       header: "Site",
       cell: (info) => {
         const site = sites.find((s) => s.id === info.getValue());
-        return site?.name ?? "â€”";
+        return site?.name ?? "—";
       },
     }),
     col.accessor("vlan_id", {
       header: "VLAN",
       cell: (info) => {
         const vlan = vlans.find((v) => v.id === info.getValue());
-        return vlan ? <Badge variant="info">{vlan.name}</Badge> : "â€”";
+        return vlan ? <Badge variant="info">{vlan.name}</Badge> : "—";
       },
     }),
     col.display({

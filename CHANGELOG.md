@@ -5,6 +5,20 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.4] - 2026
+
+### Fixed
+
+- **Update progress bar no longer jumps to 100%** — the backend now resets the update state to
+  "running / 0%" the moment an update is triggered (instead of leaving the previous update's
+  stale "success / 100%"), and the UI ignores that stale state and shows an indeterminate bar
+  until the updater actually starts. The bar tracks each step and the page auto-reloads when
+  the update completes.
+- **Fixed garbled characters in several pages** — restored the proper UTF-8 text (em-dashes,
+  box-drawing dividers, bullet separators) and removed stray byte-order marks that had been
+  introduced into the source files (Sites, Subnets, VLANs, Tenants, IPs, Virtual IPs, IPAM
+  Records, Admin, SNMP/WinRM profiles).
+
 ## [1.2.3] - 2026
 
 ### Fixed
@@ -165,6 +179,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Admin update feature** — check GitHub releases and automatically update the running stack.
 - **REST API** — full REST API with JWT authentication and MFA.
 
+[1.2.4]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.2.3...v1.2.4
 [1.2.3]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.2.2...v1.2.3
 [1.2.2]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.2.0...v1.2.1

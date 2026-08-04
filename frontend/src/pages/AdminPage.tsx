@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -43,7 +43,7 @@ const userCol = createColumnHelper<User>();
 
 type Tab = "users" | "integrations" | "snmp" | "winrm" | "update";
 
-// â”€â”€ Integration settings state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Integration settings state ───────────────────────────────────────
 
 interface IntegrationSettings {
   azure_ad: {
@@ -103,7 +103,7 @@ const defaultSettings: IntegrationSettings = {
   },
 };
 
-// â”€â”€ Main Admin Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Main Admin Page ───────────────────────────────────────────────────
 
 export default function AdminPage() {
   const location = useLocation();
@@ -127,7 +127,7 @@ export default function AdminPage() {
   );
 }
 
-// â”€â”€ Users Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Users Tab ─────────────────────────────────────────────────────────
 
 function UsersTab() {
   const dark = useThemeStore((s) => s.dark);
@@ -341,7 +341,7 @@ function UsersTab() {
   );
 }
 
-// â”€â”€ User Form Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── User Form Modal ───────────────────────────────────────────────────
 
 function UserFormModal({
   open,
@@ -511,7 +511,7 @@ function UserFormModal({
                 className="h-4 w-4 rounded border-gray-300"
               />
               <label htmlFor="mfa_enforced" className={`text-sm ${dark ? "text-gray-300" : "text-gray-700"}`}>
-                Enforce MFA â€” require this user to set up multi-factor authentication
+                Enforce MFA — require this user to set up multi-factor authentication
               </label>
             </div>
           </>
@@ -521,19 +521,19 @@ function UserFormModal({
   );
 }
 
-// â”€â”€ SNMP Profiles Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── SNMP Profiles Tab ──────────────────────────────────────────────────
 
 function SnmpTab() {
   return <SnmpProfilesPage />;
 }
 
-// â”€â”€ WinRM Profiles Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── WinRM Profiles Tab ──────────────────────────────────────────────
 
 function WinrmTab() {
   return <WinrmProfilesPage />;
 }
 
-// â”€â”€ Integrations Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Integrations Tab ──────────────────────────────────────────────────
 
 function IntegrationsTab() {
   const dark = useThemeStore((s) => s.dark);
@@ -851,7 +851,7 @@ function IntegrationsTab() {
   );
 }
 
-// â”€â”€ Update Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Update Tab ─────────────────────────────────────────────────────────
 
 function UpdateTab() {
   const dark = useThemeStore((s) => s.dark);
@@ -1002,7 +1002,7 @@ function UpdateTab() {
                 {running && <RefreshCw className="h-4 w-4 animate-spin text-blue-500" />}
                 <span className={`font-medium ${dark ? "text-gray-200" : "text-gray-800"}`}>
                   {reloading
-                    ? "Update complete â€” reloading app..."
+                    ? "Update complete — reloading app..."
                     : (state?.step ?? (running ? "Preparing update..." : triggered ? "Starting update..." : "Update failed"))}
                 </span>
               </div>
