@@ -645,7 +645,23 @@ export function useUpdateStatus() {
     queryKey: updateKeys.status(),
     queryFn: () =>
       apiClient.get<UpdateStatusResponse>("/admin/update/status").then((res) => res.data),
-    refetchInterval: 3000,
+    // Poll fast (3s) only while an update is running to drive the progress bar;
+    // otherwise poll slowly (60s) — GitHub release checks are cached server-side.
+    refetchInterval: (query) =>
+      (query.state.data as UpdateStatusResponse | undefined)?.state?.status === "running"
+        ? 3000
+        : 60000,
+  });
+}
+
+export function useCheckUpdate() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      apiClient.post<UpdateStatusResponse>("/admin/update/check").then((res) => res.data),
+    onSuccess: (data) => {
+      queryClient.setQueryData(updateKeys.status(), data);
+    },
   });
 }
 

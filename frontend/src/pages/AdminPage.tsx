@@ -26,6 +26,7 @@ import {
   useDeleteAdminUser,
   useUpdateStatus,
   useRunUpdate,
+  useCheckUpdate,
 } from "@/hooks/api";
 import { adminUserCreateSchema, adminUserUpdateSchema } from "@/lib/validators";
 import { DataTable } from "@/components/ui/DataTable";
@@ -863,6 +864,7 @@ function UpdateTab() {
   const dark = useThemeStore((s) => s.dark);
   const { data, isLoading } = useUpdateStatus();
   const runMutation = useRunUpdate();
+  const checkMutation = useCheckUpdate();
 
   const state = data?.state;
   const running = state?.status === "running";
@@ -886,12 +888,35 @@ function UpdateTab() {
               Automatically update the stack from GitHub releases.
             </p>
           </div>
-          {data?.enabled === false && (
-            <span className="rounded-md bg-yellow-100 px-3 py-1 text-sm font-medium text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300">
-              Updates disabled
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {data?.enabled === false && (
+              <span className="rounded-md bg-yellow-100 px-3 py-1 text-sm font-medium text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300">
+                Updates disabled
+              </span>
+            )}
+            <button
+              onClick={() => checkMutation.mutate()}
+              disabled={running || checkMutation.isPending || data?.enabled === false}
+              className={`inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                dark
+                  ? "border-gray-600 bg-gray-700 text-gray-200 hover:bg-gray-600"
+                  : "border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
+              }`}
+            >
+              <RefreshCw className={`h-4 w-4 ${checkMutation.isPending ? "animate-spin" : ""}`} />
+              {checkMutation.isPending ? "Checking..." : "Check for updates"}
+            </button>
+          </div>
         </div>
+
+        {checkMutation.isSuccess && (
+          <div className={`mt-3 text-xs ${dark ? "text-gray-400" : "text-gray-500"}`}>
+            Update check complete:{" "}
+            {checkMutation.data?.update_available
+              ? `${checkMutation.data.latest_release?.tag_name ?? "a new release"} is available.`
+              : "you are up to date."}
+          </div>
+        )}
 
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
           <div>

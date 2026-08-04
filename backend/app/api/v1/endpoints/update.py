@@ -21,6 +21,11 @@ UPDATES_DIR = Path(settings.UPDATE_DATA_DIR)
 TRIGGER_FILE = UPDATES_DIR / "trigger.json"
 STATE_FILE = UPDATES_DIR / "state.json"
 LOG_FILE = UPDATES_DIR / "update.log"
+RELEASE_CACHE_FILE = UPDATES_DIR / "latest_release_cache.json"
+
+# How often the GitHub API is queried for new releases (seconds).
+# 6 hours = twice every 12 hours.
+RELEASE_CACHE_TTL_SECONDS = 6 * 60 * 60
 
 GITHUB_RELEASES_URL = (
     f"{settings.GITHUB_API_URL}/repos/{settings.GITHUB_OWNER}/{settings.GITHUB_REPO}/releases/latest"
@@ -70,7 +75,7 @@ def _write_trigger(tag: str, requested_by: str) -> None:
     )
 
 
-async def _get_latest_release() -> dict | None:
+async def _fetch_release_from_github() -> dict | None:
     """Fetch the latest GitHub release. Falls back to the newest tag if no release exists."""
     try:
         async with httpx.AsyncClient(timeout=10) as client:
@@ -95,19 +100,60 @@ async def _get_latest_release() -> dict | None:
     return None
 
 
-class UpdateRunRequest(BaseModel):
-    tag: str | None = None
+def _read_release_cache() -> dict | None:
+    """Read the cached latest release (or None if absent/invalid)."""
+    try:
+        return json.loads(RELEASE_CACHE_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return None
 
 
-@router.get("/status")
-async def update_status(
-    current_user: User = Depends(get_current_admin_user),
-):
-    """Report current version, latest available release, and updater state."""
+def _write_release_cache(release: dict | None) -> None:
+    """Persist the latest release and the time it was checked."""
+    try:
+        UPDATES_DIR.mkdir(parents=True, exist_ok=True)
+        RELEASE_CACHE_FILE.write_text(
+            json.dumps({"checked_at": _now_iso(), "release": release}),
+            encoding="utf-8",
+        )
+    except Exception as e:
+        logger.warning(f"Failed to write release cache: {e}")
+
+
+def _cache_is_fresh(cached: dict) -> bool:
+    try:
+        checked_at = cached.get("checked_at")
+        if not checked_at:
+            return False
+        checked_dt = datetime.fromisoformat(str(checked_at).replace("Z", "+00:00"))
+        age_seconds = (datetime.now(UTC) - checked_dt).total_seconds()
+        return age_seconds < RELEASE_CACHE_TTL_SECONDS
+    except Exception:
+        return False
+
+
+async def _get_latest_release(force: bool = False) -> dict | None:
+    """Return the latest GitHub release, using a 6h cache unless ``force``.
+
+    Caching keeps GitHub API calls to at most twice every 12 hours, so the
+    dashboard's frequent status polls never hit the GitHub rate limit.
+    """
+    if not force:
+        cached = _read_release_cache()
+        if cached and _cache_is_fresh(cached) and cached.get("release") is not None:
+            return cached["release"]
+
+    release = await _fetch_release_from_github()
+    _write_release_cache(release)
+    return release
+
+
+async def _status_payload(force_check: bool = False) -> dict:
+    """Build the update status response, optionally forcing a fresh GitHub check."""
     if not settings.UPDATE_ENABLED:
         return {"enabled": False, "message": "Updates are disabled in configuration"}
 
-    latest = await _get_latest_release()
+    latest = await _get_latest_release(force=force_check)
     current_version = settings.APP_VERSION
     update_available = False
     if latest:
@@ -121,6 +167,26 @@ async def update_status(
         "state": _read_state(),
         "log_tail": _read_log_tail(),
     }
+
+
+class UpdateRunRequest(BaseModel):
+    tag: str | None = None
+
+
+@router.get("/status")
+async def update_status(
+    current_user: User = Depends(get_current_admin_user),
+):
+    """Report current version, latest available release (cached), and updater state."""
+    return await _status_payload()
+
+
+@router.post("/check")
+async def check_for_update(
+    current_user: User = Depends(get_current_admin_user),
+):
+    """Force a fresh GitHub check for new releases (bypasses the 6h cache)."""
+    return await _status_payload(force_check=True)
 
 
 @router.post("/run", status_code=status.HTTP_202_ACCEPTED)
