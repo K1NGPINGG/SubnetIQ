@@ -151,11 +151,11 @@ def restore_backup(archive_path: Path) -> None:
                 f"Backup schema version {manifest.get('schema_version')} is not compatible "
                 f"with the current application ({SCHEMA_VERSION})"
             )
-        if manifest.get("app_version"):
-            if _version_tuple(manifest["app_version"]) > _version_tuple(APP_VERSION):
-                raise ValueError(
-                    "Backup was created by a newer application version and cannot be restored here"
-                )
+        app_ver = manifest.get("app_version")
+        if app_ver and _version_tuple(app_ver) > _version_tuple(APP_VERSION):
+            raise ValueError(
+                "Backup was created by a newer application version and cannot be restored here"
+            )
 
         dump_path = tmp_dir / "db.dump"
         if not dump_path.exists():
