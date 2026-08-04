@@ -5,6 +5,15 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.4] - 2026
+
+### Fixed
+
+- **Update progress bar now appears immediately** — after clicking "Update", the UI polls
+  the status endpoint and no longer mistakes the previous update's stale `success` state
+  for the current update, so the bar stays visible from the moment you click and the page
+  auto-reloads once the update actually completes.
+
 ## [1.3.3] - 2026
 
 ### Changed
@@ -258,6 +267,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Admin update feature** — check GitHub releases and automatically update the running stack.
 - **REST API** — full REST API with JWT authentication and MFA.
 
+[1.3.4]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.3.3...v1.3.4
 [1.3.3]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.3.2...v1.3.3
 [1.3.2]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.3.0...v1.3.1

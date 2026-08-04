@@ -886,7 +886,11 @@ function UpdateTab() {
         const res = await apiClient.get<UpdateStatusResponse>("/admin/update/status");
         if (stopped) return;
         setLiveState(res.data.state ?? null);
-        if (res.data.state?.status === "success" || res.data.state?.status === "failed") {
+        // Only treat success/failed as terminal once this update has actually been
+        // seen as "running" - the stale success from the previous update must not
+        // hide the bar or stop polling right after triggering a new update.
+        const s = res.data.state?.status;
+        if ((s === "success" || s === "failed") && sawRunningRef.current) {
           setTriggered(false);
         }
       } catch {
