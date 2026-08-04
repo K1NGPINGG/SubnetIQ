@@ -43,6 +43,10 @@ run_update() {
 
   STARTED="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   PROGRESS_CUR=0
+  # Capture the original stack owner so we can restore it after git operations
+  # (the updater container runs as root and would otherwise create root-owned
+  # objects that block the host user from later git operations).
+  STACK_OWNER="$(stat -c '%u:%g' "$STACK" 2>/dev/null || echo 1000:1000)"
   log "update to $TAG requested"
   set_progress 0 "Starting update"
 
@@ -58,6 +62,9 @@ run_update() {
 
   set_progress 15 "Checking out $TAG"
   git checkout --force "$TAG" || { log "git checkout $TAG failed"; fail_update; return 1; }
+
+  # Restore ownership so the host user can manage the stack after the update.
+  chown -R "$STACK_OWNER" "$STACK" 2>/dev/null || true
 
   set_progress 30 "Building backend image"
   PROGRESS_CUR=30
