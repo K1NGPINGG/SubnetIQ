@@ -864,7 +864,11 @@ function UpdateTab() {
   const { data, isLoading } = useUpdateStatus();
   const runMutation = useRunUpdate();
 
-  const running = data?.state?.status === "running";
+  const state = data?.state;
+  const running = state?.status === "running";
+  const progress =
+    typeof state?.progress === "number" ? Math.max(0, Math.min(100, state.progress)) : null;
+  const showProgress = running || state?.status === "failed";
 
   const cardClass = `rounded-lg border p-5 ${dark ? "border-gray-700 bg-gray-800" : "border-gray-200 bg-white"}`;
   const labelClass = `text-xs font-medium uppercase tracking-wide ${dark ? "text-gray-400" : "text-gray-500"}`;
@@ -924,6 +928,39 @@ function UpdateTab() {
             </div>
           </div>
         </div>
+
+        {showProgress && (
+          <div className={`mt-4 rounded-md border p-4 ${dark ? "border-gray-700 bg-gray-800" : "border-gray-200 bg-white"}`}>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-sm">
+                {running && <RefreshCw className="h-4 w-4 animate-spin text-blue-500" />}
+                <span className={`font-medium ${dark ? "text-gray-200" : "text-gray-800"}`}>
+                  {state?.step ?? (running ? "Preparing update..." : "Update failed")}
+                </span>
+              </div>
+              {progress !== null && (
+                <span className={`text-xs font-semibold ${dark ? "text-gray-400" : "text-gray-500"}`}>
+                  {progress}%
+                </span>
+              )}
+            </div>
+            <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${
+                  state?.status === "failed"
+                    ? "bg-red-500"
+                    : "bg-blue-500"
+                } ${progress === null ? "animate-pulse" : ""}`}
+                style={{ width: progress !== null ? `${progress}%` : "40%" }}
+              />
+            </div>
+            {state?.tag && (
+              <div className={`mt-2 text-xs ${dark ? "text-gray-500" : "text-gray-500"}`}>
+                Updating to {state.tag}
+              </div>
+            )}
+          </div>
+        )}
 
         {data?.update_available && data?.latest_release && (
           <div className={`mt-4 rounded-md border p-3 text-sm ${dark ? "border-blue-700 bg-blue-900/30" : "border-blue-200 bg-blue-50"}`}>

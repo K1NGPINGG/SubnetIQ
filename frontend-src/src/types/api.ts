@@ -405,6 +405,8 @@ export interface UpdateState {
   tag?: string;
   started_at?: string;
   finished_at?: string;
+  progress?: number;
+  step?: string;
 }
 
 export interface UpdateStatusResponse {

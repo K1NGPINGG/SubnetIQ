@@ -26,12 +26,25 @@ set_state() {
   chmod 644 "$UPDATES/state.json"
 }
 
+# Write a running progress snapshot (0-100) with a human-readable step label.
+set_progress() {
+  PROGRESS="$1"
+  STEP="$2"
+  set_state "{\"status\":\"running\",\"tag\":\"$TAG\",\"started_at\":\"$STARTED\",\"progress\":$PROGRESS,\"step\":\"$STEP\"}"
+}
+
+fail_update() {
+  set_state "{\"status\":\"failed\",\"tag\":\"$TAG\",\"started_at\":\"$STARTED\",\"finished_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"progress\":${PROGRESS_CUR:-50},\"step\":\"Update failed\"}"
+}
+
 run_update() {
   TAG="$1"
   cd "$STACK"
 
+  STARTED="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  PROGRESS_CUR=0
   log "update to $TAG requested"
-  set_state "{\"status\":\"running\",\"tag\":\"$TAG\",\"started_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}"
+  set_progress 0 "Starting update"
 
   # Convert stack directory into a git repo on first run if needed.
   if [ ! -d .git ]; then
@@ -40,14 +53,26 @@ run_update() {
     git remote add origin "$REMOTE"
   fi
 
-  git fetch --tags --force origin || { log "git fetch failed"; return 1; }
-  git checkout --force "$TAG" || { log "git checkout $TAG failed"; return 1; }
+  set_progress 5 "Fetching repository"
+  git fetch --tags --force origin || { log "git fetch failed"; fail_update; return 1; }
 
-  docker compose build subnetiq-app backend || { log "docker compose build failed"; return 1; }
-  docker compose up -d --no-deps --force-recreate subnetiq-app backend celery-worker || { log "docker compose up failed"; return 1; }
+  set_progress 15 "Checking out $TAG"
+  git checkout --force "$TAG" || { log "git checkout $TAG failed"; fail_update; return 1; }
+
+  set_progress 30 "Building backend image"
+  PROGRESS_CUR=30
+  docker compose build backend || { log "docker compose build backend failed"; fail_update; return 1; }
+
+  set_progress 50 "Building frontend image"
+  PROGRESS_CUR=50
+  docker compose build subnetiq-app || { log "docker compose build frontend failed"; fail_update; return 1; }
+
+  set_progress 75 "Restarting services"
+  PROGRESS_CUR=75
+  docker compose up -d --no-deps --force-recreate subnetiq-app backend celery-worker || { log "docker compose up failed"; fail_update; return 1; }
 
   log "update to $TAG succeeded"
-  set_state "{\"status\":\"success\",\"tag\":\"$TAG\",\"finished_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}"
+  set_state "{\"status\":\"success\",\"tag\":\"$TAG\",\"started_at\":\"$STARTED\",\"finished_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"progress\":100,\"step\":\"Update complete\"}"
   return 0
 }
 
@@ -61,8 +86,7 @@ while true; do
       if run_update "$TAG"; then
         :
       else
-        log "update to $TAG failed"
-        set_state "{\"status\":\"failed\",\"tag\":\"$TAG\",\"finished_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}"
+        log "update to $TAG failed (state updated by updater)"
       fi
     else
       log "trigger without a valid tag ignored"
