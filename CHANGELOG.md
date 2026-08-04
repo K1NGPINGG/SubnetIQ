@@ -5,6 +5,22 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.5] - 2026
+
+### Changed
+
+- **Refactored sidebar navigation** — replaced the flat/accordion menu with a modern,
+  categorized layout:
+  - Logical sections: **Dashboard** (standalone), **IPAM Core**, **Infrastructure & Sites**,
+    **Discovery & Operations**, and **Administration**.
+  - Non-collapsible uppercase section headers, consistent 18px Lucide icons
+    (`strokeWidth 1.75`), subtle active states (`bg-blue-500/10` + right accent border),
+    and smooth hover transitions for light/dark mode.
+  - Scrollable nav body (`custom-scrollbar`) so the menu stays accessible on short screens.
+  - Menu structure is data-driven via `navConfig.ts` (sections, labels, paths, icons) so
+    future changes are trivial.
+  - All existing routes are preserved; the sidebar now adapts its background to light/dark mode.
+
 ## [1.2.4] - 2026
 
 ### Fixed
@@ -179,6 +195,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Admin update feature** — check GitHub releases and automatically update the running stack.
 - **REST API** — full REST API with JWT authentication and MFA.
 
+[1.2.5]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.2.4...v1.2.5
 [1.2.4]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.2.3...v1.2.4
 [1.2.3]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.2.2...v1.2.3
 [1.2.2]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.2.1...v1.2.2

@@ -121,7 +121,7 @@ export default function AboutPage() {
       <div className={`rounded-lg border p-4 ${dark ? "border-gray-700 bg-gray-800" : "border-gray-200 bg-white"}`}>
         <h2 className={`text-lg font-semibold mb-2 ${dark ? "text-white" : "text-gray-900"}`}>Version</h2>
         <p className={`text-sm ${dark ? "text-gray-400" : "text-gray-600"}`}>
-          SubnetIQ v1.2.4 &mdash; Built with modern open-source technologies.
+          SubnetIQ v1.2.5 &mdash; Built with modern open-source technologies.
         </p>
       </div>
     </div>

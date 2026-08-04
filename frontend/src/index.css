@@ -1,2 +1,19 @@
 @import "tailwindcss";
 @variant dark (&:where(.dark, .dark *));
+
+/* Thin, subtle scrollbar used by the sidebar nav and other scroll areas. */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(100 116 139 / 0.4) transparent;
+}
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgb(100 116 139 / 0.4);
+  border-radius: 3px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
