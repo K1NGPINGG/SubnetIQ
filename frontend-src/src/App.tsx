@@ -6,6 +6,7 @@ import DashboardPage from "@/pages/DashboardPage";
 import SubnetsPage from "@/pages/SubnetsPage";
 import IpsPage from "@/pages/IpsPage";
 import IpamRecordsPage from "@/pages/IpamRecordsPage";
+import VirtualIpsPage from "@/pages/VirtualIpsPage";
 import AssetsPage from "@/pages/AssetsPage";
 import DiscoveryPage from "@/pages/DiscoveryPage";
 import SitesPage from "@/pages/SitesPage";
@@ -49,6 +50,7 @@ export default function App() {
         <Route path="subnets" element={<SubnetsPage />} />
         <Route path="ips" element={<IpsPage />} />
         <Route path="ipam-records" element={<IpamRecordsPage />} />
+        <Route path="vips" element={<VirtualIpsPage />} />
         <Route path="assets" element={<AssetsPage />} />
         <Route path="discovery" element={<DiscoveryPage />} />
         <Route path="sites" element={<SitesPage />} />

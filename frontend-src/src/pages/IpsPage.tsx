@@ -869,7 +869,7 @@ function AllocateIpModal({
   );
 }
 
-function IpFormModal({
+export function IpFormModal({
   open,
   onClose,
   onSubmit,
