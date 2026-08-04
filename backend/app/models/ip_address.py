@@ -12,7 +12,6 @@ from app.models.base import Base, TenantMixin, TimestampMixin, UUIDPrimaryKeyMix
 
 if TYPE_CHECKING:
     from app.models.approval import ApprovalRequest
-    from app.models.ip_address import VIPNodeBinding
     from app.models.subnet import Subnet
     from app.models.tenant import Tenant
     from app.models.vrf import VRF

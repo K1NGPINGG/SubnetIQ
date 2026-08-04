@@ -120,7 +120,7 @@ class IPAddressResponse(IPAddressBase):
     node_bindings: list[VIPNodeBindingRead] | None = Field(
         default=None,
         validation_alias="vip_bindings",
-    )
+    )  # type: ignore[assignment]  # response exposes read-only bindings
 
     model_config = ConfigDict(from_attributes=True)
 
