@@ -75,6 +75,18 @@ def _write_trigger(tag: str, requested_by: str) -> None:
     )
 
 
+def _invalidate_release_cache() -> None:
+    """Drop the cached release so the next status fetch re-checks GitHub.
+
+    Without this, the UI can keep showing a stale "latest release" (up to the 6h cache
+    TTL) right after an update is triggered, because the cached value is still "fresh".
+    """
+    try:
+        RELEASE_CACHE_FILE.unlink(missing_ok=True)
+    except Exception as e:
+        logger.warning(f"Failed to invalidate release cache: {e}")
+
+
 async def _fetch_release_from_github() -> dict | None:
     """Fetch the latest GitHub release. Falls back to the newest tag if no release exists."""
     try:
@@ -209,4 +221,7 @@ async def run_update(
         target_tag = latest["tag_name"]
 
     _write_trigger(target_tag, requested_by=current_user.email)
+    # Drop the stale release cache so the status (and the progress-bar poll during
+    # this update) re-fetches the real latest release from GitHub.
+    _invalidate_release_cache()
     return {"accepted": True, "tag": target_tag, "triggered_at": _now_iso()}
