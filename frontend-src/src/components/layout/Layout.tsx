@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "@/shared/lib/auth-store";
 import { useThemeStore } from "@/shared/lib/theme-store";
+import { usePermission } from "@/shared/lib/use-permission";
 import { cn } from "@/shared/lib/utils";
 import { useNavigate } from "react-router-dom";
 import GlobalSearch from "@/components/ui/GlobalSearch";
@@ -82,12 +83,20 @@ export default function Layout() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const { dark, toggle } = useThemeStore();
+  const { isReadOnly } = usePermission();
   const navigate = useNavigate();
 
   const isActive = (to: string) =>
     to === "/"
       ? location.pathname === "/"
       : location.pathname === to || location.pathname.startsWith(to + "/");
+
+  const visibleSections = navSections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => !isReadOnly || item.readOnlyVisible !== false),
+    }))
+    .filter((section) => section.items.length > 0);
 
   const pageTitle =
     pageTitles[location.pathname] ??
@@ -131,7 +140,7 @@ export default function Layout() {
         <nav className="custom-scrollbar flex-1 overflow-y-auto px-2 py-3">
           <SidebarLink item={dashboardNav} collapsed={collapsed} active={isActive(dashboardNav.to)} />
 
-          {navSections.map((section) => (
+          {visibleSections.map((section) => (
             <div key={section.title}>
               <div
                 className={cn(

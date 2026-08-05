@@ -21,6 +21,7 @@ import { Modal } from "@/components/ui/Modal";
 import type { DiscoveryScan, DiscoveryScanCreate, Subnet } from "@/types/api";
 import type { PaginationState } from "@tanstack/react-table";
 import { useThemeStore } from "@/shared/lib/theme-store";
+import { usePermission } from "@/shared/lib/use-permission";
 
 const col = createColumnHelper<DiscoveryScan>();
 
@@ -35,6 +36,7 @@ const statusConfig: Record<string, { variant: "warning" | "info" | "success" | "
 
 export default function DiscoveryPage() {
   const dark = useThemeStore((s) => s.dark);
+  const { canWrite } = usePermission();
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 10,
@@ -122,45 +124,51 @@ export default function DiscoveryPage() {
           ? new Date(info.getValue()!).toLocaleString()
           : "—",
     }),
-    col.display({
-      id: "actions",
-      header: "Actions",
-      cell: (info) => (
-        <div className="flex items-center gap-1">
-          {info.row.original.is_scheduled && info.row.original.status !== "running" && (
-            <button
-              onClick={() => runNowMutation.mutate(info.row.original.id)}
-              className="inline-flex items-center gap-1 rounded border border-green-300 px-2 py-1 text-xs font-medium text-green-700 hover:bg-green-50 dark:border-green-700 dark:text-green-400 dark:hover:bg-green-900/30"
-            >
-              <Play className="h-3 w-3" />
-              Run Now
-            </button>
-          )}
-          {info.row.original.status === "running" && (
-            <button
-              onClick={() => cancelMutation.mutate(info.row.original.id)}
-              className="inline-flex items-center gap-1 rounded border border-amber-300 px-2 py-1 text-xs font-medium text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-400 dark:hover:bg-amber-900/30"
-            >
-              <XCircle className="h-3 w-3" />
-              Cancel
-            </button>
-          )}
-                    <DeleteButton onClick={() => setDeleteItem(info.row.original)} />
-        </div>
-      ),
-    }),
+    ...(canWrite
+      ? [
+          col.display({
+            id: "actions",
+            header: "Actions",
+            cell: (info) => (
+              <div className="flex items-center gap-1">
+                {info.row.original.is_scheduled && info.row.original.status !== "running" && (
+                  <button
+                    onClick={() => runNowMutation.mutate(info.row.original.id)}
+                    className="inline-flex items-center gap-1 rounded border border-green-300 px-2 py-1 text-xs font-medium text-green-700 hover:bg-green-50 dark:border-green-700 dark:text-green-400 dark:hover:bg-green-900/30"
+                  >
+                    <Play className="h-3 w-3" />
+                    Run Now
+                  </button>
+                )}
+                {info.row.original.status === "running" && (
+                  <button
+                    onClick={() => cancelMutation.mutate(info.row.original.id)}
+                    className="inline-flex items-center gap-1 rounded border border-amber-300 px-2 py-1 text-xs font-medium text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-400 dark:hover:bg-amber-900/30"
+                  >
+                    <XCircle className="h-3 w-3" />
+                    Cancel
+                  </button>
+                )}
+                <DeleteButton onClick={() => setDeleteItem(info.row.original)} />
+              </div>
+            ),
+          }),
+        ]
+      : []),
   ];
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-end">
-        <button
-          onClick={() => setCreateOpen(true)}
-          className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          <Plus className="h-4 w-4" />
-          New Scan
-        </button>
+        {canWrite && (
+          <button
+            onClick={() => setCreateOpen(true)}
+            className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            <Plus className="h-4 w-4" />
+            New Scan
+          </button>
+        )}
       </div>
 
       <DataTable

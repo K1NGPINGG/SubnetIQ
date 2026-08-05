@@ -23,6 +23,7 @@ import { DataTable } from "@/components/ui/DataTable";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { useThemeStore } from "@/shared/lib/theme-store";
+import { usePermission } from "@/shared/lib/use-permission";
 import { cn } from "@/shared/lib/utils";
 import type { Asset, AssetDetail, DiscoveryRunRequest } from "@/types/api";
 
@@ -46,6 +47,7 @@ const deviceTypeIcons: Record<string, React.ElementType> = {
 
 export default function AssetsPage() {
   const dark = useThemeStore((s) => s.dark);
+  const { canWrite } = usePermission();
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [sourceFilter, setSourceFilter] = useState("");
@@ -259,13 +261,15 @@ export default function AssetsPage() {
             {total} assets
           </span>
         </div>
-        <button
-          onClick={() => setRunDiscoveryOpen(true)}
-          className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          <Radar className="h-4 w-4" />
-          Run Discovery
-        </button>
+        {canWrite && (
+          <button
+            onClick={() => setRunDiscoveryOpen(true)}
+            className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            <Radar className="h-4 w-4" />
+            Run Discovery
+          </button>
+        )}
       </div>
 
       {isError && (

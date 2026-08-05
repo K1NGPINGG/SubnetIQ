@@ -10,6 +10,7 @@ import {
   useRejectRequest,
 } from "@/hooks/api";
 import { useThemeStore } from "@/shared/lib/theme-store";
+import { usePermission } from "@/shared/lib/use-permission";
 import type { ApprovalRequest } from "@/types/api";
 import type { PaginationState } from "@tanstack/react-table";
 
@@ -22,6 +23,7 @@ const statusVariant = (status: string) =>
 
 export default function ApprovalsPage() {
   const dark = useThemeStore((s) => s.dark);
+  const { canWrite } = usePermission();
   const [filter, setFilter] = useState<FilterTab>("pending");
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
@@ -86,32 +88,36 @@ export default function ApprovalsPage() {
         </span>
       ),
     }),
-    col.display({
-      id: "actions",
-      header: "Actions",
-      cell: (info) => {
-        const row = info.row.original;
-        if (row.status !== "pending") return <span className="text-xs text-gray-400">Done</span>;
-        return (
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setDecision({ approval: row, action: "approve" })}
-              className={`rounded p-1.5 ${dark ? "text-emerald-400 hover:bg-emerald-900/30" : "text-emerald-600 hover:bg-emerald-50"}`}
-              title="Approve"
-            >
-              <Check className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => setDecision({ approval: row, action: "reject" })}
-              className={`rounded p-1.5 ${dark ? "text-red-400 hover:bg-red-900/30" : "text-red-600 hover:bg-red-50"}`}
-              title="Reject"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-        );
-      },
-    }),
+    ...(canWrite
+      ? [
+          col.display({
+            id: "actions",
+            header: "Actions",
+            cell: (info) => {
+              const row = info.row.original;
+              if (row.status !== "pending") return <span className="text-xs text-gray-400">Done</span>;
+              return (
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setDecision({ approval: row, action: "approve" })}
+                    className={`rounded p-1.5 ${dark ? "text-emerald-400 hover:bg-emerald-900/30" : "text-emerald-600 hover:bg-emerald-50"}`}
+                    title="Approve"
+                  >
+                    <Check className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => setDecision({ approval: row, action: "reject" })}
+                    className={`rounded p-1.5 ${dark ? "text-red-400 hover:bg-red-900/30" : "text-red-600 hover:bg-red-50"}`}
+                    title="Reject"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              );
+            },
+          }),
+        ]
+      : []),
   ];
 
   return (

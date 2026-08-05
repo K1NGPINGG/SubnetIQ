@@ -35,6 +35,8 @@ export interface NavItem {
   to: string;
   label: string;
   icon: LucideIcon;
+  /** Hidden from the sidebar for read-only users when false. */
+  readOnlyVisible?: boolean;
 }
 
 export interface NavSection {
@@ -77,24 +79,24 @@ export const navSections: NavSection[] = [
     title: "Discovery & Operations",
     items: [
       { to: "/discovery", label: "Discovery Jobs", icon: Radar },
-      { to: "/approvals", label: "Approvals", icon: Gavel },
+      { to: "/approvals", label: "Approvals", icon: Gavel, readOnlyVisible: false },
       { to: "/audit", label: "Audit Trail", icon: History },
-      { to: "/admin/snmp", label: "SNMP Profiles", icon: Server },
-      { to: "/admin/winrm", label: "WinRM Profiles", icon: Monitor },
+      { to: "/admin/snmp", label: "SNMP Profiles", icon: Server, readOnlyVisible: false },
+      { to: "/admin/winrm", label: "WinRM Profiles", icon: Monitor, readOnlyVisible: false },
     ],
   },
   {
     title: "Administration",
     items: [
-      { to: "/admin/users", label: "Users", icon: Users },
+      { to: "/admin/users", label: "Users", icon: Users, readOnlyVisible: false },
       { to: "/admin/tags", label: "Tags", icon: Tag },
       { to: "/admin/custom-fields", label: "Custom Fields", icon: BookOpen },
-      { to: "/admin/validation-rules", label: "Validation Rules", icon: ShieldCheck },
-      { to: "/admin/webhooks", label: "Webhooks", icon: Webhook },
-      { to: "/admin/integrations", label: "Integrations", icon: Settings },
+      { to: "/admin/validation-rules", label: "Validation Rules", icon: ShieldCheck, readOnlyVisible: false },
+      { to: "/admin/webhooks", label: "Webhooks", icon: Webhook, readOnlyVisible: false },
+      { to: "/admin/integrations", label: "Integrations", icon: Settings, readOnlyVisible: false },
       { to: "/admin/audit", label: "Audit Logs", icon: ScrollText },
-      { to: "/admin/backups", label: "Backups", icon: Database },
-      { to: "/admin/update", label: "Updates", icon: RefreshCw },
+      { to: "/admin/backups", label: "Backups", icon: Database, readOnlyVisible: false },
+      { to: "/admin/update", label: "Updates", icon: RefreshCw, readOnlyVisible: false },
       { to: "/help", label: "Help", icon: HelpCircle },
       { to: "/about", label: "About", icon: Info },
     ],

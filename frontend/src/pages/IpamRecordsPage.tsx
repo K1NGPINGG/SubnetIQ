@@ -26,6 +26,7 @@ import { Badge } from "@/components/ui/Badge";
 import { EditButton } from "@/components/ui/EditButton";
 import { Modal } from "@/components/ui/Modal";
 import { useThemeStore } from "@/shared/lib/theme-store";
+import { usePermission } from "@/shared/lib/use-permission";
 import apiClient from "@/shared/lib/api-client";
 import type { IPAddress, CustomField, Tag, IPAddressUpdate, Subnet, VRF } from "@/types/api";
 import type { PaginationState } from "@tanstack/react-table";
@@ -59,6 +60,7 @@ function formatCustomFields(ip: IPAddress, fields: CustomField[]): string {
 
 export default function IpamRecordsPage() {
   const dark = useThemeStore((s) => s.dark);
+  const { canWrite } = usePermission();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [pagination, setPagination] = useState<PaginationState>({
@@ -106,41 +108,45 @@ export default function IpamRecordsPage() {
   );
 
   const columns = [
-    col.display({
-      id: "select",
-      header: () => (
-        <input
-          type="checkbox"
-          checked={selectedIds.size === filtered.length && filtered.length > 0}
-          onChange={(e) => {
-            if (e.target.checked) {
-              setSelectedIds(new Set(filtered.map((ip) => ip.id)));
-            } else {
-              setSelectedIds(new Set());
-            }
-          }}
-          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-        />
-      ),
-      cell: (info) => {
-        const ip = info.row.original as IPAddress;
-        return (
-          <input
-            type="checkbox"
-            checked={selectedIds.has(ip.id)}
-            onChange={(e) => {
-              setSelectedIds((prev) => {
-                const next = new Set(prev);
-                if (e.target.checked) next.add(ip.id);
-                else next.delete(ip.id);
-                return next;
-              });
-            }}
-            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-          />
-        );
-      },
-    }),
+    ...(canWrite
+      ? [
+          col.display({
+            id: "select",
+            header: () => (
+              <input
+                type="checkbox"
+                checked={selectedIds.size === filtered.length && filtered.length > 0}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setSelectedIds(new Set(filtered.map((ip) => ip.id)));
+                  } else {
+                    setSelectedIds(new Set());
+                  }
+                }}
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+            ),
+            cell: (info) => {
+              const ip = info.row.original as IPAddress;
+              return (
+                <input
+                  type="checkbox"
+                  checked={selectedIds.has(ip.id)}
+                  onChange={(e) => {
+                    setSelectedIds((prev) => {
+                      const next = new Set(prev);
+                      if (e.target.checked) next.add(ip.id);
+                      else next.delete(ip.id);
+                      return next;
+                    });
+                  }}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+              );
+            },
+          }),
+        ]
+      : []),
     col.accessor("address", {
       header: "IP Address",
       cell: (info) => {
@@ -304,16 +310,18 @@ export default function IpamRecordsPage() {
         </span>
       ),
     }),
-    col.display({
-      id: "actions",
-      header: "Actions",
-      cell: (info) => {
-        const ip = info.row.original as IPAddress;
-        return (
-                    <EditButton onClick={() => setEditItem(ip)} />
-        );
-      },
-    }),
+    ...(canWrite
+      ? [
+          col.display({
+            id: "actions",
+            header: "Actions",
+            cell: (info) => {
+              const ip = info.row.original as IPAddress;
+              return <EditButton onClick={() => setEditItem(ip)} />;
+            },
+          }),
+        ]
+      : []),
   ];
 
   const exportCSV = () => {
@@ -484,7 +492,7 @@ export default function IpamRecordsPage() {
         </div>
       )}
 
-      {selectedIds.size > 0 && (
+      {selectedIds.size > 0 && canWrite && (
         <div className={`flex flex-wrap items-center gap-3 rounded-lg border px-4 py-3 ${dark ? "border-blue-800 bg-blue-900/30" : "border-blue-200 bg-blue-50"}`}>
           <span className={`text-sm font-medium ${dark ? "text-blue-300" : "text-blue-800"}`}>
             {selectedIds.size} record{selectedIds.size !== 1 ? "s" : ""} selected

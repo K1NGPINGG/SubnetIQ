@@ -44,6 +44,7 @@ import { DeleteButton } from "@/components/ui/DeleteButton";
 import { Modal } from "@/components/ui/Modal";
 import type { User, UserCreate, UserUpdate, UpdateStatusResponse } from "@/types/api";import type { PaginationState } from "@tanstack/react-table";
 import { useThemeStore } from "@/shared/lib/theme-store";
+import { usePermission } from "@/shared/lib/use-permission";
 import apiClient from "@/shared/lib/api-client";
 import { formatUkDateTime, formatUkTimestampsInText } from "@/lib/format";
 import SnmpProfilesPage from "@/pages/SnmpProfilesPage";
@@ -118,6 +119,7 @@ const defaultSettings: IntegrationSettings = {
 export default function AdminPage() {
   const location = useLocation();
   const path = location.pathname;
+  const { canWrite } = usePermission();
 
   // Determine active tab from URL
   let activeTab: Tab = "users";
@@ -126,6 +128,20 @@ export default function AdminPage() {
   else if (path.includes("/admin/integrations")) activeTab = "integrations";
   else if (path.includes("/admin/update")) activeTab = "update";
   else if (path.includes("/admin/backups")) activeTab = "backups";
+
+  if (!canWrite) {
+    return (
+      <div className="rounded-lg border border-red-200 bg-red-50 p-8 text-center dark:border-red-800 dark:bg-red-900/30">
+        <h2 className="text-lg font-semibold text-red-700 dark:text-red-400">
+          Access Denied
+        </h2>
+        <p className="mt-2 text-sm text-red-600 dark:text-red-300">
+          Your role does not have permission to manage users, credentials, integrations,
+          backups, or updates.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

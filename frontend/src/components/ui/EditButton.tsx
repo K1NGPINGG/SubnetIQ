@@ -1,9 +1,12 @@
 import { Pencil } from "lucide-react";
 import { useThemeStore } from "@/shared/lib/theme-store";
+import { usePermission } from "@/shared/lib/use-permission";
 import { cn } from "@/shared/lib/utils";
 
 export function EditButton({ onClick, title = "Edit" }: { onClick: () => void; title?: string }) {
   const dark = useThemeStore((s) => s.dark);
+  const { canWrite } = usePermission();
+  if (!canWrite) return null;
   return (
     <button
       type="button"

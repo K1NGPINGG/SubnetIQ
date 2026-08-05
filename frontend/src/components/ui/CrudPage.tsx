@@ -10,6 +10,7 @@ import { EditButton } from "@/components/ui/EditButton";
 import { DeleteButton } from "@/components/ui/DeleteButton";
 
 import { useThemeStore } from "@/shared/lib/theme-store";
+import { usePermission } from "@/shared/lib/use-permission";
 import type { PaginationState } from "@tanstack/react-table";
 import type { AnyZodObject } from "zod";
 
@@ -65,6 +66,7 @@ export function CrudPage<T extends { id: string }>({
   transformSubmit?: (data: Record<string, unknown>) => Record<string, unknown>;
 }) {
   const dark = useThemeStore((s) => s.dark);
+  const { canWrite } = usePermission();
   const [search, setSearch] = useState("");
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
@@ -97,13 +99,13 @@ export function CrudPage<T extends { id: string }>({
     header: "Actions",
     cell: (info) => (
       <div className="flex items-center gap-1">
-        <EditButton onClick={() => setEditItem(info.row.original)} />
-                  <DeleteButton onClick={() => setDeleteItem(info.row.original)} />
+        {canWrite && <EditButton onClick={() => setEditItem(info.row.original)} />}
+        {canWrite && <DeleteButton onClick={() => setDeleteItem(info.row.original)} />}
       </div>
     ),
   };
 
-  const allColumns = [...columns, actionCol];
+  const allColumns = canWrite ? [...columns, actionCol] : columns;
 
   return (
     <div className="space-y-4">
@@ -120,13 +122,15 @@ export function CrudPage<T extends { id: string }>({
             className={`w-full rounded-md border py-2 pl-9 pr-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${dark ? "border-gray-600 bg-gray-800 text-white placeholder-gray-400" : "border-gray-300"}`}
           />
         </div>
-        <button
-          onClick={() => setCreateOpen(true)}
-          className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          <Plus className="h-4 w-4" />
-          Add {entityLabel}
-        </button>
+        {canWrite && (
+          <button
+            onClick={() => setCreateOpen(true)}
+            className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            <Plus className="h-4 w-4" />
+            Add {entityLabel}
+          </button>
+        )}
       </div>
 
       <DataTable

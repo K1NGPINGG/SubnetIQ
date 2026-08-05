@@ -24,6 +24,7 @@ import { DeleteButton } from "@/components/ui/DeleteButton";
 
 import { Modal } from "@/components/ui/Modal";
 import { useThemeStore } from "@/shared/lib/theme-store";
+import { usePermission } from "@/shared/lib/use-permission";
 import type {
   IPAddress,
   IPAddressCreate,
@@ -46,6 +47,7 @@ const statusVariant: Record<string, "success" | "warning" | "info" | "default" |
 
 function ScanResultsView({ subnet }: { subnet: Subnet }) {
   const dark = useThemeStore((s) => s.dark);
+  const { canWrite } = usePermission();
   const [search, setSearch] = useState("");
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
@@ -188,7 +190,7 @@ function ScanResultsView({ subnet }: { subnet: Subnet }) {
             </span>
           );
         }
-        if (!host.is_alive) return null;
+        if (!host.is_alive || !canWrite) return null;
         return (
           <button
             onClick={() => handleImport(host)}
@@ -239,7 +241,7 @@ function ScanResultsView({ subnet }: { subnet: Subnet }) {
             </p>
           </div>
           <div className="flex gap-2">
-            {unimportedAlive.length > 0 && (
+            {unimportedAlive.length > 0 && canWrite && (
               <button
                 onClick={handleImportAll}
                 disabled={!!importing}
@@ -300,6 +302,7 @@ function ScanResultsView({ subnet }: { subnet: Subnet }) {
 
 export default function IpsPage() {
   const dark = useThemeStore((s) => s.dark);
+  const { canWrite } = usePermission();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [subnetFilter, setSubnetFilter] = useState("");
@@ -345,41 +348,45 @@ export default function IpsPage() {
   );
 
   const dbColumns = [
-    col.display({
-      id: "select",
-      header: () => (
-        <input
-          type="checkbox"
-          checked={selectedIds.size === filtered.length && filtered.length > 0}
-          onChange={(e) => {
-            if (e.target.checked) {
-              setSelectedIds(new Set(filtered.map((ip) => ip.id)));
-            } else {
-              setSelectedIds(new Set());
-            }
-          }}
-          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-        />
-      ),
-      cell: (info) => {
-        const ip = info.row.original as IPAddress;
-        return (
-          <input
-            type="checkbox"
-            checked={selectedIds.has(ip.id)}
-            onChange={(e) => {
-              setSelectedIds((prev) => {
-                const next = new Set(prev);
-                if (e.target.checked) next.add(ip.id);
-                else next.delete(ip.id);
-                return next;
-              });
-            }}
-            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-          />
-        );
-      },
-    }),
+    ...(canWrite
+      ? [
+          col.display({
+            id: "select",
+            header: () => (
+              <input
+                type="checkbox"
+                checked={selectedIds.size === filtered.length && filtered.length > 0}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setSelectedIds(new Set(filtered.map((ip) => ip.id)));
+                  } else {
+                    setSelectedIds(new Set());
+                  }
+                }}
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+            ),
+            cell: (info) => {
+              const ip = info.row.original as IPAddress;
+              return (
+                <input
+                  type="checkbox"
+                  checked={selectedIds.has(ip.id)}
+                  onChange={(e) => {
+                    setSelectedIds((prev) => {
+                      const next = new Set(prev);
+                      if (e.target.checked) next.add(ip.id);
+                      else next.delete(ip.id);
+                      return next;
+                    });
+                  }}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+              );
+            },
+          }),
+        ]
+      : []),
     col.accessor("address", {
       header: "IP Address",
       cell: (info) => {
@@ -491,16 +498,20 @@ export default function IpsPage() {
         </span>
       ),
     }),
-    col.display({
-      id: "actions",
-      header: "Actions",
-      cell: (info) => (
-        <div className="flex items-center gap-1">
-                    <EditButton onClick={() => setEditItem(info.row.original as IPAddress)} />
-                    <DeleteButton onClick={() => setDeleteItem(info.row.original as IPAddress)} />
-        </div>
-      ),
-    }),
+    ...(canWrite
+      ? [
+          col.display({
+            id: "actions",
+            header: "Actions",
+            cell: (info) => (
+              <div className="flex items-center gap-1">
+                <EditButton onClick={() => setEditItem(info.row.original as IPAddress)} />
+                <DeleteButton onClick={() => setDeleteItem(info.row.original as IPAddress)} />
+              </div>
+            ),
+          }),
+        ]
+      : []),
   ];
 
   const showScanView = subnetFilter && selectedSubnet;
@@ -608,20 +619,24 @@ export default function IpsPage() {
         )}
 
         <div className="ml-auto flex gap-2">
-          <button
-            onClick={() => setAllocateOpen(true)}
-            className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-          >
-            <Plus className="h-4 w-4" />
-            Allocate IP
-          </button>
-          <button
-            onClick={() => setCreateOpen(true)}
-            className="inline-flex items-center gap-2 rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-          >
-            <Plus className="h-4 w-4" />
-            Add IP
-          </button>
+          {canWrite && (
+            <button
+              onClick={() => setAllocateOpen(true)}
+              className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              <Plus className="h-4 w-4" />
+              Allocate IP
+            </button>
+          )}
+          {canWrite && (
+            <button
+              onClick={() => setCreateOpen(true)}
+              className="inline-flex items-center gap-2 rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              <Plus className="h-4 w-4" />
+              Add IP
+            </button>
+          )}
         </div>
       </div>
 
@@ -629,7 +644,7 @@ export default function IpsPage() {
         <ScanResultsView subnet={selectedSubnet} />
       ) : (
         <>
-          {selectedIds.size > 0 && (
+          {selectedIds.size > 0 && canWrite && (
             <div className={`flex items-center gap-3 rounded-lg border px-4 py-3 ${dark ? "border-blue-800 bg-blue-900/30" : "border-blue-200 bg-blue-50"}`}>
               <span className={`text-sm font-medium ${dark ? "text-blue-300" : "text-blue-800"}`}>
                 {selectedIds.size} IP{selectedIds.size !== 1 ? "s" : ""} selected

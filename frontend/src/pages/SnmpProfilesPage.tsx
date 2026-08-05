@@ -19,6 +19,7 @@ import { Modal } from "@/components/ui/Modal";
 import type { SnmpCredential, SnmpCredentialCreate } from "@/types/api";
 import type { PaginationState } from "@tanstack/react-table";
 import { useThemeStore } from "@/shared/lib/theme-store";
+import { usePermission } from "@/shared/lib/use-permission";
 
 const col = createColumnHelper<SnmpCredential>();
 
@@ -38,6 +39,7 @@ type SnmpForm = z.infer<typeof snmpCreateSchema>;
 
 export default function SnmpProfilesPage() {
   const dark = useThemeStore((s) => s.dark);
+  const { canWrite } = usePermission();
   const [search, setSearch] = useState("");
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
@@ -94,16 +96,20 @@ export default function SnmpProfilesPage() {
       header: "Created",
       cell: (info) => new Date(info.getValue()).toLocaleDateString(),
     }),
-    col.display({
-      id: "actions",
-      header: "Actions",
-      cell: (info) => (
-        <div className="flex items-center gap-1">
-                    <EditButton onClick={() => setEditItem(info.row.original)} />
-                    <DeleteButton onClick={() => setDeleteItem(info.row.original)} />
-        </div>
-      ),
-    }),
+    ...(canWrite
+      ? [
+          col.display({
+            id: "actions",
+            header: "Actions",
+            cell: (info) => (
+              <div className="flex items-center gap-1">
+                <EditButton onClick={() => setEditItem(info.row.original)} />
+                <DeleteButton onClick={() => setDeleteItem(info.row.original)} />
+              </div>
+            ),
+          }),
+        ]
+      : []),
   ];
 
   return (
@@ -125,13 +131,15 @@ export default function SnmpProfilesPage() {
             }`}
           />
         </div>
-        <button
-          onClick={() => setCreateOpen(true)}
-          className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          <Plus className="h-4 w-4" />
-          Add SNMP Profile
-        </button>
+        {canWrite && (
+          <button
+            onClick={() => setCreateOpen(true)}
+            className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            <Plus className="h-4 w-4" />
+            Add SNMP Profile
+          </button>
+        )}
       </div>
 
       <DataTable
