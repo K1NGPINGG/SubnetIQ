@@ -1,4 +1,4 @@
-<img width="195" height="220.8" alt="SubnetIQ_Logo" src="https://github.com/K1NGPINGG/SubnetIQ/blob/main/Logo/SubnetIQ_logo.png" />
+<img center width="195" height="220.8" alt="SubnetIQ_Logo" src="https://github.com/K1NGPINGG/SubnetIQ/blob/main/Logo/SubnetIQ_logo.png" />
 
 #**SubnetIQ**
 
