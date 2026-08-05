@@ -2,11 +2,13 @@
   <img width="195" src="https://github.com/K1NGPINGG/SubnetIQ/raw/main/Logo/SubnetIQ_logo.png" alt="SubnetIQ Logo" />
 </p>
 
-<h2 align="center">SubnetIQ</h2>
+<h1 align="center">SubnetIQ</h1>
 
 <p align="center">
   <b>Intelligent Network & IPAM Management</b>
 </p>
+
+
 
 A modern IP Address Management (IPAM) platform built with FastAPI, React, PostgreSQL, and Celery.
 
