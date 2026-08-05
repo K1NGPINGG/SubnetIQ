@@ -1,4 +1,4 @@
-<img width="100" height="100" alt="SubnetIQ_Logo" src="https://github.com/K1NGPINGG/SubnetIQ/blob/main/Logo/SubnetIQ_logo.png" /> SubnetIQ
+<img width="110" height="100" alt="SubnetIQ_Logo" src="https://github.com/K1NGPINGG/SubnetIQ/blob/main/Logo/SubnetIQ_logo.png" /> **SubnetIQ**
 
 A modern IP Address Management (IPAM) platform built with FastAPI, React, PostgreSQL, and Celery.
 
@@ -69,7 +69,7 @@ open https://localhost
 
 ### Default Login
 
-After first boot, the superadmin account is created automatically using the credentials in your `.env`:
+After the first boot, the superadmin account is created automatically using the credentials in your `.env`:
 
 - **Email:** `SUPERADMIN_EMAIL` (default: `admin@ipam.local`)
 - **Password:** `SUPERADMIN_PASSWORD`
@@ -146,7 +146,7 @@ Nginx reloads whenever the certificate changes.
 docker compose --profile with-proxy up -d --build
 ```
 
-> **Note:** when using TLS on a public domain, also add your origin (e.g.
+> **Note:** When using TLS on a public domain, also add your origin (e.g.
 > `https://ipam.example.com`) to `ALLOWED_ORIGINS` in `.env` and restart the backend.
 
 ## Project Structure
