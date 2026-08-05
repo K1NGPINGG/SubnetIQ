@@ -199,6 +199,17 @@ This application stores encrypted credentials (SNMP community strings, WinRM pas
 
 ## Screenshots
 
+<img width="2540" height="1261" alt="image" src="https://github.com/user-attachments/assets/fc4c1f21-d1d9-4db3-852d-ccf7abdb427e" />
+<img width="2530" height="1269" alt="image" src="https://github.com/user-attachments/assets/54b669a7-218c-4ec5-b47d-635b686a5fb7" />
+<img width="2540" height="1261" alt="image" src="https://github.com/user-attachments/assets/22ed4260-239d-4b4f-9c49-f58bc9a98077" />
+<img width="2552" height="2836" alt="image" src="https://github.com/user-attachments/assets/2ffb3525-25ac-41e3-a799-08169135cb16" />
+<img width="2526" height="1258" alt="image" src="https://github.com/user-attachments/assets/98320f85-97d0-478d-b753-46bdfd90ed5a" />
+
+
+
+
+
+
 ## License
 
 [MIT](LICENSE) — Free to use, modify, and distribute in commercial and non-commercial environments.
