@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Trash2, Search, Shield, Eye, EyeOff } from "lucide-react";
+import { Plus, Search, Shield, Eye, EyeOff } from "lucide-react";
 import { createColumnHelper } from "@tanstack/react-table";
 import {
   useSnmpCredentials,
@@ -13,6 +13,8 @@ import {
 import { DataTable } from "@/components/ui/DataTable";
 import { Badge } from "@/components/ui/Badge";
 import { EditButton } from "@/components/ui/EditButton";
+import { DeleteButton } from "@/components/ui/DeleteButton";
+
 import { Modal } from "@/components/ui/Modal";
 import type { SnmpCredential, SnmpCredentialCreate } from "@/types/api";
 import type { PaginationState } from "@tanstack/react-table";
@@ -98,16 +100,7 @@ export default function SnmpProfilesPage() {
       cell: (info) => (
         <div className="flex items-center gap-1">
                     <EditButton onClick={() => setEditItem(info.row.original)} />
-          <button
-            onClick={() => setDeleteItem(info.row.original)}
-            className={`rounded p-1.5 ${
-              dark
-                ? "text-gray-400 hover:bg-red-900/30 hover:text-red-400"
-                : "text-gray-500 hover:bg-red-50 hover:text-red-600"
-            }`}
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
+                    <DeleteButton onClick={() => setDeleteItem(info.row.original)} />
         </div>
       ),
     }),

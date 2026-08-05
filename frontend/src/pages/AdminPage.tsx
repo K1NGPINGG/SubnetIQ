@@ -4,7 +4,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Plus,
-  Trash2,
   Search,
   Users,
   Settings,
@@ -40,6 +39,8 @@ import { adminUserCreateSchema, adminUserUpdateSchema } from "@/lib/validators";
 import { DataTable } from "@/components/ui/DataTable";
 import { Badge } from "@/components/ui/Badge";
 import { EditButton } from "@/components/ui/EditButton";
+import { DeleteButton } from "@/components/ui/DeleteButton";
+
 import { Modal } from "@/components/ui/Modal";
 import type { User, UserCreate, UserUpdate, UpdateStatusResponse } from "@/types/api";import type { PaginationState } from "@tanstack/react-table";
 import { useThemeStore } from "@/shared/lib/theme-store";
@@ -224,16 +225,7 @@ function UsersTab() {
       cell: (info) => (
         <div className="flex items-center gap-1">
                     <EditButton onClick={() => setEditItem(info.row.original)} />
-          <button
-            onClick={() => setDeleteItem(info.row.original)}
-            className={`rounded p-1.5 ${
-              dark
-                ? "text-gray-400 hover:bg-red-900/30 hover:text-red-400"
-                : "text-gray-500 hover:bg-red-50 hover:text-red-600"
-            }`}
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
+                    <DeleteButton onClick={() => setDeleteItem(info.row.original)} />
         </div>
       ),
     }),
@@ -1323,17 +1315,7 @@ function BackupsTab() {
                           <Download className="h-3 w-3" />
                           {downloading === b.filename ? "..." : "Download"}
                         </button>
-                        <button
-                          onClick={() => deleteBackup.mutate(b.filename)}
-                          disabled={deleteBackup.isPending}
-                          className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium ${
-                            dark ? "border-gray-600 text-gray-300 hover:bg-red-900/30 hover:text-red-400" : "border-gray-300 text-gray-700 hover:bg-red-50 hover:text-red-600"
-                          }`}
-                          title="Delete"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                          Delete
-                        </button>
+                                                <DeleteButton onClick={() => deleteBackup.mutate(b.filename)} disabled={deleteBackup.isPending} />
                       </div>
                     </td>
                   </tr>

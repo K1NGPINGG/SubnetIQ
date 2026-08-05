@@ -5,6 +5,15 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.7] - 2026
+
+### Changed
+
+- **Consistent Delete buttons** — the icon-only trash buttons were replaced with a labeled
+  **Delete** button that matches the Edit button style across all pages (CRUD pages, IPs,
+  Virtual IPs, subnets, VLANs, sites, tenants, SNMP/WinRM profiles, discovery, users,
+  and backups).
+
 ## [1.3.6] - 2026
 
 ### Changed
@@ -283,6 +292,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Admin update feature** — check GitHub releases and automatically update the running stack.
 - **REST API** — full REST API with JWT authentication and MFA.
 
+[1.3.7]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.3.6...v1.3.7
 [1.3.6]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.3.5...v1.3.6
 [1.3.5]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.3.4...v1.3.5
 [1.3.4]: https://github.com/K1NGPINGG/SubnetIQ/compare/v1.3.3...v1.3.4

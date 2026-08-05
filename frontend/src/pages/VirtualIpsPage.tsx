@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createColumnHelper } from "@tanstack/react-table";
-import { Plus, Trash2, Search, Layers } from "lucide-react";
+import { Plus, Search, Layers } from "lucide-react";
 import {
   useIpAddresses,
   useCreateIp,
@@ -11,6 +11,8 @@ import {
 import { DataTable } from "@/components/ui/DataTable";
 import { Badge } from "@/components/ui/Badge";
 import { EditButton } from "@/components/ui/EditButton";
+import { DeleteButton } from "@/components/ui/DeleteButton";
+
 import { Modal } from "@/components/ui/Modal";
 import { useThemeStore } from "@/shared/lib/theme-store";
 import type { IPAddress } from "@/types/api";
@@ -131,12 +133,7 @@ export default function VirtualIpsPage() {
       cell: (info) => (
         <div className="flex items-center gap-1">
                     <EditButton onClick={() => setEditItem(info.row.original as IPAddress)} />
-          <button
-            onClick={() => setDeleteItem(info.row.original as IPAddress)}
-            className={`rounded p-1.5 ${dark ? "text-gray-400 hover:bg-red-900/30 hover:text-red-400" : "text-gray-500 hover:bg-red-50 hover:text-red-600"}`}
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
+                    <DeleteButton onClick={() => setDeleteItem(info.row.original as IPAddress)} />
         </div>
       ),
     }),
