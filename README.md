@@ -2,7 +2,7 @@
   <img width="195" src="https://github.com/K1NGPINGG/SubnetIQ/raw/main/Logo/SubnetIQ_logo.png" alt="SubnetIQ Logo" />
 </p>
 
-<h1 align="center">SubnetIQ</h1>
+<h2 align="center">SubnetIQ</h2>
 
 <p align="center">
   <b>Intelligent Network & IPAM Management</b>
